@@ -10,16 +10,16 @@ Future<void> main() async {
     url: SupabaseConfig.url,
     publishableKey: SupabaseConfig.publishableKey,
   );
-  runApp(const HipoApp());
+  runApp(const AATransportApp());
 }
 
-class HipoApp extends StatelessWidget {
-  const HipoApp({super.key});
+class AATransportApp extends StatelessWidget {
+  const AATransportApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Hipo',
+      title: 'A&A Transport',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       home: const SplashScreen(),

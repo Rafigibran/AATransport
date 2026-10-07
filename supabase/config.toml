@@ -1,4 +1,4 @@
-project_id = "hipo_flutter_app"
+project_id = "aatransport"
 
 [functions.payment-callback]
 verify_jwt = false

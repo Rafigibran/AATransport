@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
 
     const { data: booking, error: bookingErr } = await userClient
       .from('bookings')
-      .select('*, hotels(name, price_per_night)')
+      .select('*, cars(name, price_per_day)')
       .eq('id', booking_id)
       .single();
     if (bookingErr || !booking) return jsonResponse({ error: 'Booking tidak ditemukan' }, 404);
@@ -56,22 +56,22 @@ Deno.serve(async (req) => {
     if (!apiId || !apiKey) return jsonResponse({ error: 'SAKURUPIAH_API_ID / SAKURUPIAH_API_KEY belum diatur di Edge Function secrets' }, 500);
 
     const amount = Math.round(Number(booking.total));
-    const merchantRef = `HIPO-${String(booking.id).replaceAll('-', '').slice(0, 24)}`;
+    const merchantRef = `AAT-${String(booking.id).replaceAll('-', '').slice(0, 24)}`;
     const signature = await createInvoiceSignature(apiId, method_code, merchantRef, amount, apiKey);
 
     const form = new URLSearchParams();
     form.set('api_id', apiId);
     form.set('method', method_code);
-    form.set('name', booking.guest_name ?? '');
-    form.set('email', booking.guest_email ?? '');
-    form.set('phone', booking.guest_phone ?? '');
+    form.set('name', booking.customer_name ?? '');
+    form.set('email', booking.customer_email ?? '');
+    form.set('phone', booking.customer_phone ?? '');
     form.set('amount', String(amount));
     form.set('merchant_fee', merchantFee);
     form.set('merchant_ref', merchantRef);
     form.set('expired', '24');
-    form.append('produk[]', booking.hotels?.name ?? 'Hotel Booking');
-    form.append('qty[]', String(booking.nights ?? 1));
-    form.append('harga[]', String(booking.hotels?.price_per_night ?? amount));
+    form.append('produk[]', booking.cars?.name ?? 'Sewa Mobil A&A Transport');
+    form.append('qty[]', String(booking.days ?? 1));
+    form.append('harga[]', String(booking.cars?.price_per_day ?? amount));
     form.set('callback_url', `${supabaseUrl}/functions/v1/payment-callback`);
     form.set('return_url', `${supabaseUrl}/functions/v1/payment-return`);
     form.set('signature', signature);

@@ -1,51 +1,70 @@
 import 'package:flutter/material.dart';
-import '../../models/hotel.dart';
+import '../../models/car.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/format.dart';
 import '../../widgets/common_widgets.dart';
 import '../booking/booking_info_screen.dart';
 
-class HotelDetailsScreen extends StatefulWidget {
-  final Hotel hotel;
-  const HotelDetailsScreen({super.key, required this.hotel});
+class CarDetailsScreen extends StatefulWidget {
+  final Car car;
+  const CarDetailsScreen({super.key, required this.car});
   @override
-  State<HotelDetailsScreen> createState() => _HotelDetailsScreenState();
+  State<CarDetailsScreen> createState() => _CarDetailsScreenState();
 }
 
-class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
-  late Hotel _hotel = widget.hotel;
+class _CarDetailsScreenState extends State<CarDetailsScreen> {
+  late Car _car = widget.car;
   late Future<List<ReviewItem>> _reviews;
 
   @override
   void initState() {
     super.initState();
-    _reviews = HotelService.fetchReviews(_hotel.id);
+    _reviews = CarService.fetchReviews(_car.id);
   }
 
   IconData _facilityIcon(String f) {
     switch (f) {
-      case 'Free Wifi':
-        return Icons.wifi;
-      case 'Restaurant':
-        return Icons.restaurant;
-      case 'Pool':
-        return Icons.pool;
-      case 'Gym':
-        return Icons.fitness_center;
-      case 'Spa':
-        return Icons.spa;
-      case 'Beach':
-        return Icons.beach_access;
+      case 'Air Conditioning':
+        return Icons.ac_unit;
+      case 'Bluetooth Audio':
+        return Icons.bluetooth_audio;
+      case 'USB Charger':
+        return Icons.usb;
+      case 'GPS Navigation':
+        return Icons.navigation_outlined;
+      case 'Child Seat':
+        return Icons.child_friendly_outlined;
+      case 'Roof Rack':
+        return Icons.roofing_outlined;
+      case 'Backup Camera':
+        return Icons.videocam_outlined;
+      case 'Cruise Control':
+        return Icons.speed_outlined;
       default:
-        return Icons.local_parking;
+        return Icons.check_circle_outline;
     }
+  }
+
+  Widget _specChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(99)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 16, color: AppColors.primary),
+        const SizedBox(width: 6),
+        Text(label,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+      ]),
+    );
   }
 
   Future<void> _toggleFav() async {
     try {
-      final nowFav = await HotelService.toggleFavourite(_hotel);
-      setState(() => _hotel = _hotel.copyWith(isFavourite: nowFav));
+      final nowFav = await CarService.toggleFavourite(_car);
+      setState(() => _car = _car.copyWith(isFavourite: nowFav));
     } catch (e) {
       if (mounted) showErrorSnackBar(context, e);
     }
@@ -68,7 +87,7 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
               onPressed: () => Navigator.pop(context),
             ),
             flexibleSpace: FlexibleSpaceBar(
-              background: Image.network(_hotel.image,
+              background: Image.network(_car.image,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) =>
                       Container(color: Colors.grey.shade200)),
@@ -83,16 +102,16 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
                   Row(
                     children: [
                       Expanded(
-                          child: Text(_hotel.name,
+                          child: Text(_car.name,
                               style: const TextStyle(
                                   fontSize: 24, fontWeight: FontWeight.bold))),
                       IconButton(
                           onPressed: _toggleFav,
                           icon: Icon(
-                              _hotel.isFavourite
+                              _car.isFavourite
                                   ? Icons.favorite
                                   : Icons.favorite_border,
-                              color: _hotel.isFavourite
+                              color: _car.isFavourite
                                   ? Colors.red
                                   : AppColors.textGrey)),
                     ],
@@ -101,23 +120,31 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
                     const Icon(Icons.location_on_outlined,
                         size: 16, color: AppColors.textGrey),
                     const SizedBox(width: 4),
-                    Text(_hotel.location,
+                    Text(_car.location,
                         style: const TextStyle(color: AppColors.textGrey)),
                     const Spacer(),
                     const Icon(Icons.star, color: AppColors.star, size: 18),
                     const SizedBox(width: 4),
-                    Text('${_hotel.rating}  (${_hotel.reviews} reviews)',
+                    Text('${_car.rating}  (${_car.reviews} reviews)',
                         style: const TextStyle(fontWeight: FontWeight.w600)),
                   ]),
+                  const SizedBox(height: 16),
+                  Wrap(spacing: 10, runSpacing: 10, children: [
+                    _specChip(Icons.event_seat_outlined, '${_car.seats} Kursi'),
+                    _specChip(Icons.settings_outlined, _car.transmission),
+                    _specChip(Icons.local_gas_station_outlined, _car.fuelType),
+                    _specChip(Icons.luggage_outlined, '${_car.baggage} Bagasi'),
+                    _specChip(Icons.directions_car_outlined, _car.carType),
+                  ]),
                   const SizedBox(height: 22),
-                  const Text('Facilities',
+                  const Text('Features',
                       style:
                           TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 14,
                     runSpacing: 12,
-                    children: _hotel.facilities
+                    children: _car.features
                         .map((f) =>
                             Column(mainAxisSize: MainAxisSize.min, children: [
                               Container(
@@ -140,7 +167,7 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
                       style:
                           TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  Text(_hotel.description,
+                  Text(_car.description,
                       style: const TextStyle(
                           color: AppColors.textGrey, height: 1.55)),
                   const SizedBox(height: 22),
@@ -150,11 +177,11 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
                     height: 90,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      itemCount: _hotel.photos.length,
+                      itemCount: _car.photos.length,
                       separatorBuilder: (_, __) => const SizedBox(width: 12),
                       itemBuilder: (_, i) => ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: Image.network(_hotel.photos[i],
+                          child: Image.network(_car.photos[i],
                               width: 110,
                               height: 90,
                               fit: BoxFit.cover,
@@ -163,7 +190,7 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
                     ),
                   ),
                   const SizedBox(height: 22),
-                  const SectionHeader(title: 'Location'),
+                  const SectionHeader(title: 'Lokasi Penjemputan'),
                   const SizedBox(height: 12),
                   Container(
                     height: 150,
@@ -177,7 +204,7 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
                           const Icon(Icons.location_on,
                               color: AppColors.primary, size: 36),
                           const SizedBox(height: 6),
-                          Text(_hotel.location,
+                          Text(_car.location,
                               style: const TextStyle(color: AppColors.textGrey))
                         ])),
                   ),
@@ -185,7 +212,7 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
                   const SectionHeader(title: 'Rating & Reviews'),
                   const SizedBox(height: 12),
                   Row(children: [
-                    Text(_hotel.rating.toString(),
+                    Text(_car.rating.toString(),
                         style: const TextStyle(
                             fontSize: 36, fontWeight: FontWeight.bold)),
                     const SizedBox(width: 14),
@@ -229,7 +256,7 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
                         return const LoadingView();
                       final reviews = snapshot.data ?? [];
                       if (reviews.isEmpty)
-                        return const Text('Belum ada review untuk hotel ini.',
+                        return const Text('Belum ada review untuk car ini.',
                             style: TextStyle(color: AppColors.textGrey));
                       return Column(
                         children: reviews
@@ -311,13 +338,13 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
           RichText(
             text: TextSpan(children: [
               TextSpan(
-                  text: formatRupiah(_hotel.price),
+                  text: formatRupiah(_car.price),
                   style: const TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 19)),
               const TextSpan(
-                  text: ' /malam', style: TextStyle(color: AppColors.textGrey)),
+                  text: ' /hari', style: TextStyle(color: AppColors.textGrey)),
             ]),
           ),
           const SizedBox(width: 18),
@@ -326,8 +353,8 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
                   onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => BookingInfoScreen(hotel: _hotel))),
-                  child: const Text('Book Now'))),
+                          builder: (_) => BookingInfoScreen(car: _car))),
+                  child: const Text('Sewa Sekarang'))),
         ]),
       ),
     );

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../models/hotel.dart';
+import '../models/car.dart';
 import '../utils/format.dart';
 
 class PrimaryButton extends StatelessWidget {
@@ -72,12 +72,12 @@ class AppTextField extends StatelessWidget {
   }
 }
 
-class HotelCard extends StatelessWidget {
-  final Hotel hotel;
+class CarCard extends StatelessWidget {
+  final Car car;
   final VoidCallback? onTap;
   final bool horizontal;
-  const HotelCard(
-      {super.key, required this.hotel, this.onTap, this.horizontal = false});
+  const CarCard(
+      {super.key, required this.car, this.onTap, this.horizontal = false});
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +103,7 @@ class HotelCard extends StatelessWidget {
                   ClipRRect(
                     borderRadius: const BorderRadius.horizontal(
                         left: Radius.circular(20)),
-                    child: Image.network(hotel.image,
+                    child: Image.network(car.image,
                         width: 110,
                         height: 110,
                         fit: BoxFit.cover,
@@ -111,7 +111,7 @@ class HotelCard extends StatelessWidget {
                             width: 110,
                             height: 110,
                             color: Colors.grey.shade200,
-                            child: const Icon(Icons.hotel))),
+                            child: const Icon(Icons.directions_car))),
                   ),
                   Expanded(
                     child: Padding(
@@ -127,14 +127,14 @@ class HotelCard extends StatelessWidget {
                   ClipRRect(
                     borderRadius:
                         const BorderRadius.vertical(top: Radius.circular(20)),
-                    child: Image.network(hotel.image,
+                    child: Image.network(car.image,
                         height: 130,
                         width: 220,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
                             height: 130,
                             color: Colors.grey.shade200,
-                            child: const Icon(Icons.hotel, size: 40))),
+                            child: const Icon(Icons.directions_car, size: 40))),
                   ),
                   Padding(padding: const EdgeInsets.all(12), child: _info()),
                 ],
@@ -150,14 +150,14 @@ class HotelCard extends StatelessWidget {
         Row(
           children: [
             Expanded(
-                child: Text(hotel.name,
+                child: Text(car.name,
                     style: const TextStyle(
                         fontWeight: FontWeight.bold, fontSize: 15),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis)),
             const Icon(Icons.star, color: AppColors.star, size: 16),
             const SizedBox(width: 4),
-            Text(hotel.rating.toString(),
+            Text(car.rating.toString(),
                 style:
                     const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
           ],
@@ -167,7 +167,7 @@ class HotelCard extends StatelessWidget {
           const Icon(Icons.location_on_outlined,
               size: 14, color: AppColors.textGrey),
           const SizedBox(width: 4),
-          Text(hotel.location,
+          Text(car.location,
               style: const TextStyle(color: AppColors.textGrey, fontSize: 12)),
         ]),
         const SizedBox(height: 8),
@@ -175,13 +175,13 @@ class HotelCard extends StatelessWidget {
           text: TextSpan(
             children: [
               TextSpan(
-                  text: formatRupiah(hotel.price),
+                  text: formatRupiah(car.price),
                   style: const TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 16)),
               const TextSpan(
-                  text: ' /malam',
+                  text: ' /hari',
                   style: TextStyle(color: AppColors.textGrey, fontSize: 12)),
             ],
           ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/hotel.dart';
+import '../../models/car.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/format.dart';
@@ -8,15 +8,15 @@ import 'payment_screen.dart';
 
 class ReviewSummaryScreen extends StatefulWidget {
   final BookingDraft draft;
-  final String guestName;
-  final String guestEmail;
-  final String guestPhone;
+  final String customerName;
+  final String customerEmail;
+  final String customerPhone;
   const ReviewSummaryScreen(
       {super.key,
       required this.draft,
-      required this.guestName,
-      required this.guestEmail,
-      required this.guestPhone});
+      required this.customerName,
+      required this.customerEmail,
+      required this.customerPhone});
   @override
   State<ReviewSummaryScreen> createState() => _ReviewSummaryScreenState();
 }
@@ -28,9 +28,9 @@ class _ReviewSummaryScreenState extends State<ReviewSummaryScreen> {
     setState(() => _paying = true);
     try {
       final booking = await BookingService.createBooking(widget.draft,
-          guestName: widget.guestName,
-          guestEmail: widget.guestEmail,
-          guestPhone: widget.guestPhone);
+          customerName: widget.customerName,
+          customerEmail: widget.customerEmail,
+          customerPhone: widget.customerPhone);
       final payment = await BookingService.createPayment(
           booking.id, widget.draft.paymentMethodCode);
       if (!mounted) return;
@@ -61,27 +61,27 @@ class _ReviewSummaryScreenState extends State<ReviewSummaryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            HotelCard(hotel: d.hotel, horizontal: true),
-            const Text('Booking Details',
+            CarCard(car: d.car, horizontal: true),
+            const Text('Rental Details',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
             const SizedBox(height: 12),
-            _row('Check In', formatDateId(d.checkIn)),
-            _row('Check Out', formatDateId(d.checkOut)),
-            _row('Guest', '${d.guests}'),
-            _row('Room', '${d.rooms} - ${d.roomType}'),
-            _row('Durasi', '${d.nights} malam'),
+            _row('Tanggal Ambil', formatDateId(d.pickupDate)),
+            _row('Tanggal Kembali', formatDateId(d.returnDate)),
+            _row('Penyewa', '${d.passengers}'),
+            _row('Mobil', '${d.units} - ${d.serviceType}'),
+            _row('Durasi', '${d.days} hari'),
             const Divider(height: 28),
-            const Text('Guest Details',
+            const Text('Customer Details',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
             const SizedBox(height: 12),
-            _row('Name', widget.guestName),
-            _row('Email', widget.guestEmail),
-            _row('Phone', widget.guestPhone),
+            _row('Name', widget.customerName),
+            _row('Email', widget.customerEmail),
+            _row('Phone', widget.customerPhone),
             const Divider(height: 28),
             const Text('Payment Details',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
             const SizedBox(height: 12),
-            _row('Harga per malam', formatRupiah(d.hotel.price)),
+            _row('Harga sewa per hari', formatRupiah(d.car.price)),
             _row('Subtotal', formatRupiah(d.subtotal)),
             _row('Pajak & biaya layanan (10%)', formatRupiah(d.tax)),
             const Divider(),

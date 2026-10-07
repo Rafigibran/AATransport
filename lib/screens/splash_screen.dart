@@ -39,24 +39,27 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            const Icon(Icons.directions_car,
+                size: 64, color: AppColors.primary),
+            const SizedBox(height: 12),
             RichText(
               text: const TextSpan(children: [
                 TextSpan(
-                    text: 'H',
+                    text: 'A&A',
                     style: TextStyle(
-                        fontSize: 52,
+                        fontSize: 42,
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary)),
                 TextSpan(
-                    text: 'ipo',
+                    text: ' Transport',
                     style: TextStyle(
-                        fontSize: 52,
+                        fontSize: 42,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textDark)),
               ]),
             ),
             const SizedBox(height: 6),
-            const Text('Check-in to comfort',
+            const Text('Travel in comfort',
                 style:
                     TextStyle(color: AppColors.textGrey, letterSpacing: 1.2)),
             const SizedBox(height: 32),

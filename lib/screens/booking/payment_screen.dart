@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../models/hotel.dart';
+import '../../models/car.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/format.dart';
@@ -73,7 +73,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            HotelCard(hotel: widget.booking.hotel, horizontal: true),
+            CarCard(car: widget.booking.car, horizontal: true),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),

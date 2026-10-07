@@ -1,7 +1,7 @@
-# Hipo - Check-in to Comfort
+# A&A Transport — Aplikasi Booking Mobil
 
-Aplikasi booking hotel menggunakan Flutter dengan backend **Supabase** dan
-pembayaran **SakuRupiah**. Semua fitur sudah berfungsi (bukan mock lagi).
+Aplikasi booking/sewa mobil menggunakan Flutter dengan backend **Supabase** dan
+pembayaran **SakuRupiah**. Package name: `com.wizardnative.aatransport`.
 
 ## Cara Menjalankan
 
@@ -17,16 +17,17 @@ flutter run
 
 - Splash Screen & Onboarding
 - Auth Supabase: Register, Login, Forgot Password (OTP email), Reset Password
-- Home: cari hotel, Popular Hotel, Offer List (data dari Supabase)
-- Hotel Details: fasilitas, deskripsi, foto, lokasi, rating & reviews dari database
-- Favourite per user
-- Booking Flow: pilih tanggal, tamu/kamar, tipe kamar, metode pembayaran
-  SakuRupiah (QRIS, VA bank, e-wallet, Alfamart/Indomaret), info tamu,
-  review summary dalam Rupiah
+- Home: cari mobil, Mobil Populer, Pilihan Mobil (data dari Supabase)
+- Detail Mobil: spesifikasi (kursi, transmisi, bahan bakar, bagasi), fitur,
+  foto, lokasi penjemputan, rating & reviews dari database
+- Mobil Favorit per user
+- Booking Flow: pilih tanggal ambil/kembali, jumlah penumpang & mobil,
+  jenis layanan (Dengan Sopir, Lepas Kunci, Antar/Jemput Bandara, Sewa Harian + BBM),
+  info penyewa, review summary dalam Rupiah
 - Pembayaran: checkout SakuRupiah via Edge Function, nomor VA/QR,
   cek status pembayaran, webhook callback mengonfirmasi booking
 - My Booking: Upcoming / Completed / Cancelled, batalkan booking, E-Receipt
-- Add Review (rating hotel terupdate otomatis)
+- Add Review (rating mobil terupdate otomatis)
 - Metode pembayaran tersimpan (channel favorit, tanpa data kartu)
 - Profile: edit nama/no. HP, Logout
 
@@ -37,7 +38,7 @@ lib/
   main.dart
   config/supabase_config.dart
   theme/app_theme.dart
-  models/hotel.dart
+  models/car.dart
   services/app_services.dart
   utils/format.dart
   widgets/
@@ -47,6 +48,6 @@ lib/
     booking/
     profile/
 supabase/
-  migrations/     SQL skema + RLS + seed hotel (Rupiah)
+  migrations/     SQL skema + RLS + seed mobil (Rupiah/hari)
   functions/      create-payment, payment-callback, check-payment, payment-return
 ```

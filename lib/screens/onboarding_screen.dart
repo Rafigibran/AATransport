@@ -16,24 +16,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final pages = const [
     _PageData(
       image:
-          'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=900&q=80',
-      title: 'Find Your Perfect Stay,\nAnytime, Anywhere',
+          'https://images.unsplash.com/photo-1503376780353-3e669a7b70b9?w=900&q=80',
+      title: 'Temukan Mobil Sewa\nTerbaik Untukmu',
       desc:
-          'Lorem ipsum is simply dummy text of the printing and typesetting industry.',
+          'Berbagai pilihan mobil bersih dan terawat untuk perjalanan bisnis, keluarga, dan liburan.',
     ),
     _PageData(
       image:
-          'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=900&q=80',
-      title: 'Book Your Dream Hotel in\nJust a Tap',
+          'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=900&q=80',
+      title: 'Booking Mobil Impianmu\nHanya Sekali Ketuk',
       desc:
-          'Lorem ipsum is simply dummy text of the printing and typesetting industry.',
+          'Pilih tanggal, tentukan layanan dengan sopir atau lepas kunci, dan bayar dengan aman.',
     ),
     _PageData(
       image:
-          'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=900&q=80',
-      title: 'Relax and enjoy your trip\nwith Hipo',
+          'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=900&q=80',
+      title: 'Jalan Nyaman dan Tenang\nbersama A&A Transport',
       desc:
-          'Lorem ipsum is simply dummy text of the printing and typesetting industry.',
+          'Mobil siap jalan, harga transparan dalam Rupiah, dan dukungan pembayaran SakuRupiah.',
     ),
   ];
 
@@ -75,7 +75,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               errorBuilder: (_, __, ___) => Container(
                                   height: 380,
                                   color: AppColors.background,
-                                  child: const Icon(Icons.hotel,
+                                  child: const Icon(Icons.directions_car,
                                       size: 80, color: AppColors.primary))),
                         ),
                         const SizedBox(height: 28),

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../models/hotel.dart';
+import '../../models/car.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 
 class AddReviewScreen extends StatefulWidget {
-  final Hotel hotel;
+  final Car car;
   final String? bookingId;
-  const AddReviewScreen({super.key, required this.hotel, this.bookingId});
+  const AddReviewScreen({super.key, required this.car, this.bookingId});
   @override
   State<AddReviewScreen> createState() => _AddReviewScreenState();
 }
@@ -26,8 +26,8 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
   Future<void> _submit() async {
     setState(() => _loading = true);
     try {
-      await HotelService.addReview(
-          hotelId: widget.hotel.id,
+      await CarService.addReview(
+          carId: widget.car.id,
           bookingId: widget.bookingId,
           rating: rating,
           comment: _comment.text);
@@ -52,10 +52,10 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            HotelCard(hotel: widget.hotel, horizontal: true),
+            CarCard(car: widget.car, horizontal: true),
             const Text('Bagaimana pengalamanmu di',
                 style: TextStyle(color: AppColors.textGrey)),
-            Text(widget.hotel.name,
+            Text(widget.car.name,
                 style:
                     const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
             const SizedBox(height: 18),

@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../models/hotel.dart';
+import '../../models/car.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import 'review_summary_screen.dart';
 
-class GuestInfoScreen extends StatefulWidget {
+class CustomerInfoScreen extends StatefulWidget {
   final BookingDraft draft;
-  const GuestInfoScreen({super.key, required this.draft});
+  const CustomerInfoScreen({super.key, required this.draft});
   @override
-  State<GuestInfoScreen> createState() => _GuestInfoScreenState();
+  State<CustomerInfoScreen> createState() => _CustomerInfoScreenState();
 }
 
-class _GuestInfoScreenState extends State<GuestInfoScreen> {
+class _CustomerInfoScreenState extends State<CustomerInfoScreen> {
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _phone = TextEditingController();
@@ -44,15 +44,15 @@ class _GuestInfoScreenState extends State<GuestInfoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar:
-          AppBar(title: const Text('Guest Info'), leading: const BackButton()),
+      appBar: AppBar(
+          title: const Text('Customer Info'), leading: const BackButton()),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             AppTextField(
-                label: 'Guest Name',
-                hint: 'Nama tamu',
+                label: 'Customer Name',
+                hint: 'Nama penyewa',
                 icon: Icons.person_outline,
                 controller: _name),
             const SizedBox(height: 18),
@@ -78,8 +78,8 @@ class _GuestInfoScreenState extends State<GuestInfoScreen> {
             if (_bookForOthers) ...[
               const SizedBox(height: 8),
               AppTextField(
-                  label: 'Other Guest Name',
-                  hint: 'Nama tamu lain',
+                  label: 'Other Customer Name',
+                  hint: 'Nama penyewa lain',
                   icon: Icons.person_outline,
                   controller: _otherName),
             ],
@@ -87,15 +87,15 @@ class _GuestInfoScreenState extends State<GuestInfoScreen> {
             PrimaryButton(
               text: 'Continue',
               onPressed: () {
-                final guestName =
+                final customerName =
                     _bookForOthers && _otherName.text.trim().isNotEmpty
                         ? _otherName.text.trim()
                         : _name.text.trim();
-                if (guestName.isEmpty ||
+                if (customerName.isEmpty ||
                     _email.text.trim().isEmpty ||
                     _phone.text.trim().isEmpty) {
                   showErrorSnackBar(context,
-                      'Nama, email, dan nomor handphone tamu wajib diisi');
+                      'Nama, email, dan nomor handphone penyewa wajib diisi');
                   return;
                 }
                 Navigator.push(
@@ -103,9 +103,9 @@ class _GuestInfoScreenState extends State<GuestInfoScreen> {
                   MaterialPageRoute(
                     builder: (_) => ReviewSummaryScreen(
                       draft: widget.draft,
-                      guestName: guestName,
-                      guestEmail: _email.text.trim(),
-                      guestPhone: _phone.text.trim(),
+                      customerName: customerName,
+                      customerEmail: _email.text.trim(),
+                      customerPhone: _phone.text.trim(),
                     ),
                   ),
                 );

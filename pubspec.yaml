@@ -1,5 +1,5 @@
-name: hipo_app
-description: Hipo - Check-in to comfort. Hotel booking app with Supabase backend and SakuRupiah payments.
+name: aatransport
+description: A&A Transport - Car booking app with Supabase backend and SakuRupiah payments.
 publish_to: 'none'
 version: 1.0.0+1
 

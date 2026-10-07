@@ -1,11 +1,11 @@
 {
-    "name": "hipo_app",
-    "short_name": "hipo_app",
+    "name": "A&A Transport",
+    "short_name": "A&A Transport",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "A&A Transport - aplikasi booking mobil.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

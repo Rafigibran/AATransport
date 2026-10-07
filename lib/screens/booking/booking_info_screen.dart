@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
-import '../../models/hotel.dart';
+import '../../models/car.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/format.dart';
 import '../../widgets/common_widgets.dart';
-import 'guest_info_screen.dart';
+import 'customer_info_screen.dart';
 
 class BookingInfoScreen extends StatefulWidget {
-  final Hotel hotel;
-  const BookingInfoScreen({super.key, required this.hotel});
+  final Car car;
+  const BookingInfoScreen({super.key, required this.car});
   @override
   State<BookingInfoScreen> createState() => _BookingInfoScreenState();
 }
 
 class _BookingInfoScreenState extends State<BookingInfoScreen> {
-  DateTime _checkIn = DateTime.now().add(const Duration(days: 7));
-  DateTime _checkOut = DateTime.now().add(const Duration(days: 10));
-  int _guests = 1;
-  int _rooms = 1;
-  String _roomType = 'Economy Room';
+  DateTime _pickupDate = DateTime.now().add(const Duration(days: 7));
+  DateTime _returnDate = DateTime.now().add(const Duration(days: 10));
+  int _passengers = 1;
+  int _units = 1;
+  String _serviceType = 'Dengan Sopir';
   PaymentChannel _channel = paymentChannels.first;
 
   Future<void> _pickDates() async {
@@ -26,12 +26,12 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
       context: context,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
-      initialDateRange: DateTimeRange(start: _checkIn, end: _checkOut),
+      initialDateRange: DateTimeRange(start: _pickupDate, end: _returnDate),
     );
     if (picked != null) {
       setState(() {
-        _checkIn = picked.start;
-        _checkOut = picked.end;
+        _pickupDate = picked.start;
+        _returnDate = picked.end;
       });
     }
   }
@@ -90,7 +90,7 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final nights = _checkOut.difference(_checkIn).inDays;
+    final days = _returnDate.difference(_pickupDate).inDays;
     return Scaffold(
       appBar: AppBar(
           title: const Text('Booking Info'), leading: const BackButton()),
@@ -98,31 +98,37 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            HotelCard(hotel: widget.hotel, horizontal: true),
-            _dateField('Check In', formatDateId(_checkIn)),
-            _dateField('Check Out', formatDateId(_checkOut)),
+            CarCard(car: widget.car, horizontal: true),
+            _dateField('Tanggal Ambil', formatDateId(_pickupDate)),
+            _dateField('Tanggal Kembali', formatDateId(_returnDate)),
             Row(children: [
               Expanded(
-                  child: _stepper(
-                      'Guest', _guests, (v) => setState(() => _guests = v))),
+                  child: _stepper('Penyewa', _passengers,
+                      (v) => setState(() => _passengers = v))),
               const SizedBox(width: 12),
               Expanded(
                   child: _stepper(
-                      'Room', _rooms, (v) => setState(() => _rooms = v))),
+                      'Mobil', _units, (v) => setState(() => _units = v))),
             ]),
             const SizedBox(height: 18),
             InputDecorator(
               decoration: const InputDecoration(
-                  labelText: 'Room Type',
+                  labelText: 'Jenis Layanan',
                   prefixIcon: Icon(Icons.meeting_room_outlined)),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
-                  value: _roomType,
+                  value: _serviceType,
                   isExpanded: true,
-                  items: ['Economy Room', 'Deluxe Room', 'Suite', 'Family Room']
+                  items: [
+                    'Dengan Sopir',
+                    'Lepas Kunci',
+                    'Antar/Jemput Bandara',
+                    'Sewa Harian + BBM'
+                  ]
                       .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                       .toList(),
-                  onChanged: (v) => setState(() => _roomType = v ?? _roomType),
+                  onChanged: (v) =>
+                      setState(() => _serviceType = v ?? _serviceType),
                 ),
               ),
             ),
@@ -142,31 +148,31 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
               decoration: BoxDecoration(
                   color: Colors.white, borderRadius: BorderRadius.circular(16)),
               child: Text(
-                  'Perkiraan total: ${formatRupiah(widget.hotel.price * (nights < 1 ? 1 : nights) * _rooms)} untuk ${nights < 1 ? 1 : nights} malam x $_rooms kamar (sebelum pajak 10%)',
+                  'Perkiraan total: ${formatRupiah(widget.car.price * (days < 1 ? 1 : days) * _units)} untuk ${days < 1 ? 1 : days} hari x $_units mobil (sebelum pajak 10%)',
                   style: const TextStyle(color: AppColors.textGrey)),
             ),
             const SizedBox(height: 24),
             PrimaryButton(
               text: 'Continue',
               onPressed: () {
-                if (nights < 1) {
+                if (days < 1) {
                   showErrorSnackBar(
                       context, 'Tanggal check-out harus setelah check-in');
                   return;
                 }
                 final draft = BookingDraft(
-                  hotel: widget.hotel,
-                  checkIn: _checkIn,
-                  checkOut: _checkOut,
-                  guests: _guests,
-                  rooms: _rooms,
-                  roomType: _roomType,
+                  car: widget.car,
+                  pickupDate: _pickupDate,
+                  returnDate: _returnDate,
+                  passengers: _passengers,
+                  units: _units,
+                  serviceType: _serviceType,
                   paymentMethodCode: _channel.code,
                 );
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => GuestInfoScreen(draft: draft)));
+                        builder: (_) => CustomerInfoScreen(draft: draft)));
               },
             ),
           ],

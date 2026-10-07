@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/hotel.dart';
+import '../models/car.dart';
 
 SupabaseClient get _db => Supabase.instance.client;
 
@@ -40,82 +40,82 @@ class AuthService {
   static bool get isLoggedIn => _db.auth.currentSession != null;
 }
 
-class HotelService {
-  static const _hotelColumns =
-      '*, hotel_photos(url, sort_order), hotel_facilities(facilities(name))';
+class CarService {
+  static const _carColumns =
+      '*, car_photos(url, sort_order), car_features(features(name))';
 
   static Future<Set<String>> favouriteIds() async {
     final uid = currentUserId;
     if (uid == null) return {};
     final rows =
-        await _db.from('favourites').select('hotel_id').eq('user_id', uid);
-    return rows.map((r) => r['hotel_id'].toString()).toSet();
+        await _db.from('favourites').select('car_id').eq('user_id', uid);
+    return rows.map((r) => r['car_id'].toString()).toSet();
   }
 
-  static Future<List<Hotel>> fetchHotels({String query = ''}) async {
+  static Future<List<Car>> fetchCars({String query = ''}) async {
     final rows = await _db
-        .from('hotels')
-        .select(_hotelColumns)
+        .from('cars')
+        .select(_carColumns)
         .eq('is_active', true)
         .order('rating', ascending: false);
     final favs = await favouriteIds();
-    var hotels = rows
+    var cars = rows
         .map((r) =>
-            Hotel.fromMap(r, isFavourite: favs.contains(r['id'].toString())))
+            Car.fromMap(r, isFavourite: favs.contains(r['id'].toString())))
         .toList();
     final q = query.trim().toLowerCase();
     if (q.isNotEmpty) {
-      hotels = hotels
+      cars = cars
           .where((h) =>
               h.name.toLowerCase().contains(q) ||
               h.location.toLowerCase().contains(q))
           .toList();
     }
-    return hotels;
+    return cars;
   }
 
-  static Future<List<Hotel>> fetchFavourites() async {
+  static Future<List<Car>> fetchFavourites() async {
     final uid = currentUserId;
     if (uid == null) return [];
     final rows = await _db
         .from('favourites')
-        .select('hotel_id, hotels($_hotelColumns)')
+        .select('car_id, cars($_carColumns)')
         .eq('user_id', uid);
-    final hotels = <Hotel>[];
+    final cars = <Car>[];
     for (final r in rows) {
-      final h = r['hotels'];
+      final h = r['cars'];
       if (h is Map<String, dynamic>)
-        hotels.add(Hotel.fromMap(h, isFavourite: true));
+        cars.add(Car.fromMap(h, isFavourite: true));
     }
-    return hotels;
+    return cars;
   }
 
-  static Future<bool> toggleFavourite(Hotel hotel) async {
+  static Future<bool> toggleFavourite(Car car) async {
     final uid = currentUserId;
     if (uid == null) throw Exception('Silakan login terlebih dahulu');
-    if (hotel.isFavourite) {
+    if (car.isFavourite) {
       await _db
           .from('favourites')
           .delete()
           .eq('user_id', uid)
-          .eq('hotel_id', hotel.id);
+          .eq('car_id', car.id);
       return false;
     }
-    await _db.from('favourites').insert({'user_id': uid, 'hotel_id': hotel.id});
+    await _db.from('favourites').insert({'user_id': uid, 'car_id': car.id});
     return true;
   }
 
-  static Future<List<ReviewItem>> fetchReviews(String hotelId) async {
+  static Future<List<ReviewItem>> fetchReviews(String carId) async {
     final rows = await _db
         .from('reviews')
         .select('*, profiles(full_name, avatar_url)')
-        .eq('hotel_id', hotelId)
+        .eq('car_id', carId)
         .order('created_at', ascending: false);
     return rows.map((r) => ReviewItem.fromMap(r)).toList();
   }
 
   static Future<void> addReview(
-      {required String hotelId,
+      {required String carId,
       String? bookingId,
       required int rating,
       required String comment}) async {
@@ -123,7 +123,7 @@ class HotelService {
     if (uid == null) throw Exception('Silakan login terlebih dahulu');
     await _db.from('reviews').insert({
       'user_id': uid,
-      'hotel_id': hotelId,
+      'car_id': carId,
       if (bookingId != null) 'booking_id': bookingId,
       'rating': rating,
       'comment': comment.trim(),
@@ -132,28 +132,28 @@ class HotelService {
 }
 
 class BookingService {
-  static const _bookingColumns = '*, hotels(*)';
+  static const _bookingColumns = '*, cars(*)';
 
   static Future<Booking> createBooking(BookingDraft draft,
-      {required String guestName,
-      required String guestEmail,
-      required String guestPhone}) async {
+      {required String customerName,
+      required String customerEmail,
+      required String customerPhone}) async {
     final uid = currentUserId;
     if (uid == null) throw Exception('Silakan login terlebih dahulu');
     final row = await _db
         .from('bookings')
         .insert({
           'user_id': uid,
-          'hotel_id': draft.hotel.id,
-          'check_in': draft.checkIn.toIso8601String().substring(0, 10),
-          'check_out': draft.checkOut.toIso8601String().substring(0, 10),
-          'guests': draft.guests,
-          'rooms': draft.rooms,
-          'room_type': draft.roomType,
-          'guest_name': guestName.trim(),
-          'guest_email': guestEmail.trim(),
-          'guest_phone': guestPhone.trim(),
-          'nights': draft.nights,
+          'car_id': draft.car.id,
+          'pickup_date': draft.pickupDate.toIso8601String().substring(0, 10),
+          'return_date': draft.returnDate.toIso8601String().substring(0, 10),
+          'passengers': draft.passengers,
+          'units': draft.units,
+          'service_type': draft.serviceType,
+          'customer_name': customerName.trim(),
+          'customer_email': customerEmail.trim(),
+          'customer_phone': customerPhone.trim(),
+          'days': draft.days,
           'subtotal': draft.subtotal,
           'tax': draft.tax,
           'total': draft.total,

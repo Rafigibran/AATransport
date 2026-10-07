@@ -1,4 +1,4 @@
-package com.hipo.hipo_app
+package com.wizardnative.aatransport
 
 import io.flutter.embedding.android.FlutterActivity
 

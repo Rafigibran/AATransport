@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/hotel.dart';
+import '../../models/car.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/format.dart';
 import '../../widgets/common_widgets.dart';
@@ -21,18 +21,18 @@ class EReceiptScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            HotelCard(hotel: booking.hotel, horizontal: true),
+            CarCard(car: booking.car, horizontal: true),
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                   color: Colors.white, borderRadius: BorderRadius.circular(20)),
               child: Column(children: [
                 _row('Booking ID', booking.id.substring(0, 8).toUpperCase()),
-                _row('Check In', formatDateId(booking.checkIn)),
-                _row('Check Out', formatDateId(booking.checkOut)),
-                _row('Guest', booking.guestName),
-                _row('Room', '${booking.rooms} x ${booking.roomType}'),
-                _row('Durasi', '${booking.nights} malam'),
+                _row('Tanggal Ambil', formatDateId(booking.pickupDate)),
+                _row('Tanggal Kembali', formatDateId(booking.returnDate)),
+                _row('Penyewa', booking.customerName),
+                _row('Mobil', '${booking.units} x ${booking.serviceType}'),
+                _row('Durasi', '${booking.days} hari'),
               ]),
             ),
             const SizedBox(height: 16),

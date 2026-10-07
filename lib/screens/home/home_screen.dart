@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../models/hotel.dart';
+import '../../models/car.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/format.dart';
 import '../../widgets/common_widgets.dart';
-import 'hotel_details_screen.dart';
+import 'car_details_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,13 +14,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _search = TextEditingController();
-  late Future<List<Hotel>> _future;
+  late Future<List<Car>> _future;
   Map<String, dynamic>? _profile;
 
   @override
   void initState() {
     super.initState();
-    _future = HotelService.fetchHotels();
+    _future = CarService.fetchCars();
     ProfileService.fetchProfile().then((p) {
       if (mounted) setState(() => _profile = p);
     });
@@ -33,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _reload() {
-    setState(() => _future = HotelService.fetchHotels(query: _search.text));
+    setState(() => _future = CarService.fetchCars(query: _search.text));
   }
 
   @override
@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis),
                           const Row(children: [
-                            Text('Find Hotel Nearby',
+                            Text('Find Car Nearby',
                                 style: TextStyle(fontWeight: FontWeight.bold)),
                             Icon(Icons.keyboard_arrow_down, size: 18),
                           ]),
@@ -89,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     children: [
                       AppTextField(
-                          hint: 'Cari hotel atau kota...',
+                          hint: 'Cari car atau kota...',
                           icon: Icons.search,
                           controller: _search),
                       const SizedBox(height: 14),
@@ -110,19 +110,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       const Row(children: [
                         Expanded(
                             child: _StaticChip(
-                                icon: Icons.person_outline, text: '1 Guest')),
+                                icon: Icons.person_outline,
+                                text: '1 Penumpang')),
                         SizedBox(width: 12),
                         Expanded(
                             child: _StaticChip(
-                                icon: Icons.bed_outlined, text: '1 Room')),
+                                icon: Icons.directions_car_outlined,
+                                text: '1 Mobil')),
                       ]),
                       const SizedBox(height: 18),
-                      PrimaryButton(text: 'Find Hotel', onPressed: _reload),
+                      PrimaryButton(text: 'Find Car', onPressed: _reload),
                     ],
                   ),
                 ),
                 const SizedBox(height: 26),
-                FutureBuilder<List<Hotel>>(
+                FutureBuilder<List<Car>>(
                   future: _future,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting)
@@ -130,49 +132,49 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (snapshot.hasError)
                       return ErrorView(
                           message:
-                              'Gagal memuat hotel. Pastikan tabel Supabase sudah dibuat (lihat BACKEND_SETUP.md).',
+                              'Gagal memuat car. Pastikan tabel Supabase sudah dibuat (lihat BACKEND_SETUP.md).',
                           onRetry: _reload);
-                    final hotels = snapshot.data ?? [];
-                    if (hotels.isEmpty)
+                    final cars = snapshot.data ?? [];
+                    if (cars.isEmpty)
                       return const ErrorView(
                           message:
-                              'Belum ada hotel. Tambahkan data hotel di Supabase.');
-                    final popular = hotels.take(3).toList();
+                              'Belum ada car. Tambahkan data car di Supabase.');
+                    final popular = cars.take(3).toList();
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SectionHeader(title: 'Popular Hotel'),
+                        const SectionHeader(title: 'Popular Car'),
                         const SizedBox(height: 14),
                         SizedBox(
                           height: 225,
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
                             itemCount: popular.length,
-                            itemBuilder: (_, i) => HotelCard(
-                              hotel: popular[i],
+                            itemBuilder: (_, i) => CarCard(
+                              car: popular[i],
                               onTap: () async {
                                 await Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (_) => HotelDetailsScreen(
-                                            hotel: popular[i])));
+                                        builder: (_) =>
+                                            CarDetailsScreen(car: popular[i])));
                                 _reload();
                               },
                             ),
                           ),
                         ),
                         const SizedBox(height: 24),
-                        const SectionHeader(title: 'Your Offer List'),
+                        const SectionHeader(title: 'Pilihan Mobil Untukmu'),
                         const SizedBox(height: 14),
-                        ...hotels.map((h) => HotelCard(
-                              hotel: h,
+                        ...cars.map((h) => CarCard(
+                              car: h,
                               horizontal: true,
                               onTap: () async {
                                 await Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                         builder: (_) =>
-                                            HotelDetailsScreen(hotel: h)));
+                                            CarDetailsScreen(car: h)));
                                 _reload();
                               },
                             )),

@@ -67,7 +67,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         future: _future,
         builder: (context, snapshot) {
           final profile = snapshot.data;
-          final name = (profile?['full_name'] ?? 'Pengguna Hipo').toString();
+          final name =
+              (profile?['full_name'] ?? 'Pengguna A&A Transport').toString();
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(

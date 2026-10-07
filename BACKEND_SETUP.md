@@ -1,8 +1,10 @@
-# Hipo Backend — Supabase + SakuRupiah
+# A&A Transport Backend — Supabase + SakuRupiah
 
-Aplikasi ini sudah terhubung ke Supabase (Auth, database, RLS, Storage) dan
-pembayaran SakuRupiah melalui Supabase Edge Functions. API key SakuRupiah
+Aplikasi booking mobil ini terhubung ke Supabase (Auth, database, RLS, Storage)
+dan pembayaran SakuRupiah melalui Supabase Edge Functions. API key SakuRupiah
 **tidak pernah** ditaruh di aplikasi Flutter — hanya di secrets Edge Functions.
+
+Package name aplikasi: `com.wizardnative.aatransport`
 
 Project yang dipakai:
 
@@ -17,12 +19,23 @@ flutter run --dart-define=SUPABASE_URL=https://xxxx.supabase.co --dart-define=SU
 ## 1. Buat tabel database
 
 1. Buka Supabase Dashboard → **SQL Editor**
-2. Copy seluruh isi file `supabase/migrations/202610080001_init_hipo.sql`
-3. **Run**. File ini membuat tabel `profiles`, `hotels`, `hotel_photos`,
-   `facilities`, `hotel_facilities`, `favourites`, `bookings`, `payments`,
+2. Copy seluruh isi file `supabase/migrations/202610080001_init_aatransport.sql`
+3. **Run**. File ini membuat tabel `profiles`, `cars`, `car_photos`,
+   `features`, `car_features`, `favourites`, `bookings`, `payments`,
    `reviews`, `saved_payment_methods`, lengkap dengan RLS, trigger profil
-   otomatis saat user register, bucket Storage `hotel-images`, dan seed
-   6 hotel dengan harga Rupiah.
+   otomatis saat user register, bucket Storage `car-images`, dan seed
+   6 mobil dengan harga sewa Rupiah per hari.
+
+Catatan: jika kamu sebelumnya sudah menjalankan skema hotel versi lama,
+jalankan SQL berikut di SQL Editor sebelum menjalankan file baru, supaya
+tabel lama tidak bentrok:
+
+```sql
+drop table if exists public.hotel_facilities, public.hotel_photos, public.hotels,
+  public.reviews, public.payments, public.bookings, public.favourites cascade;
+```
+
+(Skip langkah ini kalau database masih kosong.)
 
 ## 2. Atur Auth
 
@@ -31,8 +44,7 @@ Di Supabase Dashboard → **Authentication**:
 - Pastikan provider **Email** aktif.
 - Untuk OTP reset password: buka **Email Templates → Reset Password** dan
   pastikan template menampilkan kode token, contoh tambahkan
-  `Kode OTP kamu: {{ .Token }}` di isi email. Alur di aplikasi:
-  Forgot Password → OTP → password baru.
+  `Kode OTP kamu: {{ .Token }}` di isi email.
 - (Opsional) Matikan **Confirm email** saat development supaya register
   bisa langsung login. Untuk production sebaiknya tetap aktif.
 
@@ -54,44 +66,32 @@ supabase functions deploy payment-return
 ```
 
 API ID & API KEY didapat dari dashboard merchant SakuRupiah setelah akun
-terverifikasi (lihat dokumentasi: https://sakurupiah.id/developers/api-dokumentasi).
+terverifikasi (dokumentasi: https://sakurupiah.id/developers/api-dokumentasi).
 Jangan bagikan API KEY di chat atau commit ke repository.
 
 Fungsi pembayaran:
 
 | Function | Dipanggil oleh | Keterangan |
 | --- | --- | --- |
-| `create-payment` | Aplikasi (JWT user) | Membuat invoice SakuRupiah (HMAC signature), menyimpan pembayaran, mengembalikan checkout URL / nomor VA / QR |
-| `payment-callback` | Webhook SakuRupiah | Verifikasi `X-Callback-Signature` (HMAC-SHA256 dari raw body dengan API key), mengupdate status booking menjadi confirmed/expired |
+| `create-payment` | Aplikasi (JWT user) | Membuat invoice SakuRupiah (HMAC signature) untuk booking mobil, mengembalikan checkout URL / nomor VA / QR |
+| `payment-callback` | Webhook SakuRupiah | Verifikasi `X-Callback-Signature`, mengupdate status booking menjadi confirmed/expired |
 | `check-payment` | Aplikasi (JWT user) | Cek status transaksi ke SakuRupiah dan sinkronkan ke database |
 | `payment-return` | Redirect setelah checkout | Halaman sederhana “kembali ke aplikasi” |
-
-Di dashboard SakuRupiah, callback URL juga bisa diatur ke:
-
-```
-https://jbowxiolzbbacfyatvoh.supabase.co/functions/v1/payment-callback
-```
-
-(URL yang sama juga dikirim otomatis pada setiap pembuatan invoice.)
 
 ## 4. Alur fitur di aplikasi
 
 | Fitur | Implementasi |
 | --- | --- |
-| Register/Login | Supabase Auth email + password, profil otomatis dibuat via trigger |
-| Forgot password | Reset email + verifikasi OTP (`OtpType.recovery`) lalu update password |
-| Daftar & cari hotel | Tabel `hotels` (+ foto/fasilitas), pencarian nama/lokasi |
+| Register/Login | Supabase Auth email + password, profil otomatis via trigger |
+| Daftar & cari mobil | Tabel `cars` (+ foto/fitur/spesifikasi), pencarian nama/lokasi |
 | Favourite | Tabel `favourites` per user |
-| Booking | Tanggal (date range picker), tamu/kamar, tipe kamar, metode pembayaran SakuRupiah |
-| Pembayaran | Edge Function `create-payment` → buka checkout URL, atau bayar via nomor VA/QR yang ditampilkan |
-| My Booking | Booking user dari database; tab Upcoming/Completed/Cancelled; batalkan booking; cek status pembayaran |
+| Booking | Tanggal ambil/kembali, penumpang/mobil, jenis layanan, pembayaran SakuRupiah |
+| My Booking | Booking user dari database; tab Upcoming/Completed/Cancelled; batalkan booking |
 | E-Receipt | Detail booking & pembayaran dari database |
-| Review | User menulis rating/komentar; rating hotel terupdate otomatis via trigger |
-| Metode pembayaran tersimpan | Channel SakuRupiah favorit user (tanpa menyimpan data kartu apa pun) |
-| Profil | Nama/no. HP bisa diedit, logout mengakhiri session Supabase |
+| Review | Rating/komentar; rating mobil terupdate otomatis via trigger |
 
-Semua harga menggunakan Rupiah (`formatRupiah`, contoh `Rp1.500.000/malam`),
-pajak & biaya layanan 10% dihitung di ringkasan booking.
+Semua harga menggunakan Rupiah per hari (`Rp350.000/hari`), pajak & biaya
+layanan 10% dihitung di ringkasan booking.
 
 ## 5. Menjalankan aplikasi
 

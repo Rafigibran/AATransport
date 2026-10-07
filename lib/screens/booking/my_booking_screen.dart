@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/hotel.dart';
+import '../../models/car.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/format.dart';
@@ -104,7 +104,7 @@ class _BookingCard extends StatelessWidget {
           Row(children: [
             ClipRRect(
                 borderRadius: BorderRadius.circular(14),
-                child: Image.network(booking.hotel.image,
+                child: Image.network(booking.car.image,
                     width: 78,
                     height: 78,
                     fit: BoxFit.cover,
@@ -115,10 +115,10 @@ class _BookingCard extends StatelessWidget {
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(booking.hotel.name,
+                    Text(booking.car.name,
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
-                    Text(booking.hotel.location,
+                    Text(booking.car.location,
                         style: const TextStyle(
                             color: AppColors.textGrey, fontSize: 12)),
                     const SizedBox(height: 6),
@@ -137,7 +137,7 @@ class _BookingCard extends StatelessWidget {
                 size: 16, color: AppColors.textGrey),
             const SizedBox(width: 6),
             Text(
-                '${formatDateId(booking.checkIn)}  →  ${formatDateId(booking.checkOut)}',
+                '${formatDateId(booking.pickupDate)}  →  ${formatDateId(booking.returnDate)}',
                 style:
                     const TextStyle(fontSize: 12, color: AppColors.textGrey)),
           ]),
@@ -198,7 +198,7 @@ class _BookingCard extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                             builder: (_) => AddReviewScreen(
-                                hotel: booking.hotel, bookingId: booking.id)));
+                                car: booking.car, bookingId: booking.id)));
                     onChanged();
                   },
                   style: OutlinedButton.styleFrom(

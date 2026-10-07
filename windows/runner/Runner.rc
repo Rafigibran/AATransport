@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.hipo" "\0"
-            VALUE "FileDescription", "hipo_app" "\0"
+            VALUE "CompanyName", "com.wizardnative" "\0"
+            VALUE "FileDescription", "aatransport" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "hipo_app" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.hipo. All rights reserved." "\0"
-            VALUE "OriginalFilename", "hipo_app.exe" "\0"
-            VALUE "ProductName", "hipo_app" "\0"
+            VALUE "InternalName", "aatransport" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.wizardnative. All rights reserved." "\0"
+            VALUE "OriginalFilename", "aatransport.exe" "\0"
+            VALUE "ProductName", "aatransport" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
