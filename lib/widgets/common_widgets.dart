@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../models/hotel.dart';
+import '../utils/format.dart';
 
 class PrimaryButton extends StatelessWidget {
   final String text;
@@ -174,14 +175,13 @@ class HotelCard extends StatelessWidget {
           text: TextSpan(
             children: [
               TextSpan(
-                  text:
-                      '\$${hotel.price.toStringAsFixed(hotel.price % 1 == 0 ? 0 : 1)}',
+                  text: formatRupiah(hotel.price),
                   style: const TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 16)),
               const TextSpan(
-                  text: ' /night',
+                  text: ' /malam',
                   style: TextStyle(color: AppColors.textGrey, fontSize: 12)),
             ],
           ),
@@ -259,4 +259,52 @@ void showSuccessDialog(BuildContext context,
       ),
     ),
   );
+}
+
+class LoadingView extends StatelessWidget {
+  const LoadingView({super.key});
+  @override
+  Widget build(BuildContext context) => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+}
+
+class ErrorView extends StatelessWidget {
+  final String message;
+  final VoidCallback? onRetry;
+  const ErrorView({super.key, required this.message, this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_outlined,
+                size: 44, color: AppColors.textGrey),
+            const SizedBox(height: 12),
+            Text(message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.textGrey)),
+            if (onRetry != null) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                  width: 180,
+                  child: PrimaryButton(text: 'Coba Lagi', onPressed: onRetry)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void showErrorSnackBar(BuildContext context, Object error) {
+  final msg = error.toString().replaceFirst('Exception: ', '');
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 }

@@ -1,10 +1,54 @@
 import 'package:flutter/material.dart';
+import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import 'reset_password_screen.dart';
 
-class OtpScreen extends StatelessWidget {
-  const OtpScreen({super.key});
+class OtpScreen extends StatefulWidget {
+  final String email;
+  const OtpScreen({super.key, required this.email});
+  @override
+  State<OtpScreen> createState() => _OtpScreenState();
+}
+
+class _OtpScreenState extends State<OtpScreen> {
+  final _otp = TextEditingController();
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    _otp.dispose();
+    super.dispose();
+  }
+
+  Future<void> _resend() async {
+    try {
+      await AuthService.sendPasswordReset(widget.email);
+      if (mounted)
+        showErrorSnackBar(context, 'Kode OTP baru sudah dikirim ke email kamu');
+    } catch (e) {
+      if (mounted) showErrorSnackBar(context, e);
+    }
+  }
+
+  Future<void> _verify() async {
+    if (_otp.text.trim().length < 6) {
+      showErrorSnackBar(context, 'Masukkan kode OTP dari email kamu');
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      await AuthService.verifyRecoveryOtp(widget.email, _otp.text);
+      if (!mounted) return;
+      Navigator.pushReplacement(context,
+          MaterialPageRoute(builder: (_) => const ResetPasswordScreen()));
+    } catch (e) {
+      if (mounted) showErrorSnackBar(context, e);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -17,71 +61,24 @@ class OtpScreen extends StatelessWidget {
             const Text('Verify Your Account!',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
-            const Text('Enter the OTP code sent to your email.',
-                style: TextStyle(color: AppColors.textGrey)),
+            Text('Masukkan kode OTP yang dikirim ke ${widget.email}.',
+                style: const TextStyle(color: AppColors.textGrey)),
             const SizedBox(height: 28),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(
-                  4,
-                  (i) => Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                                color: i == 2
-                                    ? AppColors.primary
-                                    : AppColors.border,
-                                width: 1.4)),
-                        child: Center(
-                            child: Text(['2', '4', '1', ''][i],
-                                style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold))),
-                      )),
-            ),
+            AppTextField(
+                label: 'Kode OTP',
+                hint: 'Contoh: 123456',
+                icon: Icons.pin_outlined,
+                controller: _otp),
             const SizedBox(height: 16),
-            const Center(
-                child: Text("Don't receive OTP?  Re-send Code",
-                    style: TextStyle(color: AppColors.textGrey))),
-            const Spacer(),
-            // Simple number pad UI (frontend only)
-            GridView.count(
-              shrinkWrap: true,
-              crossAxisCount: 3,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 6,
-              crossAxisSpacing: 6,
-              childAspectRatio: 1.9,
-              children: [
-                '1',
-                '2',
-                '3',
-                '4',
-                '5',
-                '6',
-                '7',
-                '8',
-                '9',
-                '*',
-                '0',
-                '⌫'
-              ]
-                  .map((k) => Center(
-                      child: Text(k,
-                          style: const TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.w600))))
-                  .toList(),
+            Center(
+              child: TextButton(
+                  onPressed: _resend,
+                  child: const Text("Tidak menerima OTP? Kirim ulang kode")),
             ),
-            const SizedBox(height: 18),
+            const Spacer(),
             PrimaryButton(
-                text: 'Verify',
-                onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const ResetPasswordScreen()))),
+                text: _loading ? 'Memverifikasi...' : 'Verify',
+                onPressed: _loading ? null : _verify),
           ],
         ),
       ),

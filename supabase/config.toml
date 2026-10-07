@@ -1,0 +1,7 @@
+project_id = "hipo_flutter_app"
+
+[functions.payment-callback]
+verify_jwt = false
+
+[functions.payment-return]
+verify_jwt = false

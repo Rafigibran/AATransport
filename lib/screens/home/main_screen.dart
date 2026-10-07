@@ -6,13 +6,14 @@ import 'favourites_screen.dart';
 import '../profile/profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final int initialIndex;
+  const MainScreen({super.key, this.initialIndex = 0});
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _index = 0;
+  late int _index = widget.initialIndex;
   final _pages = const [
     HomeScreen(),
     MyBookingScreen(),

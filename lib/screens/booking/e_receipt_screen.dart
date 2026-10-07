@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../models/hotel.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/format.dart';
 import '../../widgets/common_widgets.dart';
 
 class EReceiptScreen extends StatelessWidget {
   final Booking booking;
   const EReceiptScreen({super.key, required this.booking});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -17,60 +19,68 @@ class EReceiptScreen extends StatelessWidget {
           ]),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Column(children: [
-          HotelCard(hotel: booking.hotel, horizontal: true),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-                color: Colors.white, borderRadius: BorderRadius.circular(20)),
-            child: Column(children: [
-              _row('Booking ID', booking.id),
-              _row('Check In', booking.checkIn),
-              _row('Check Out', booking.checkOut),
-              _row('Guest', 'Alul Ahmad'),
-              _row('Room', '1 Room'),
+        child: Column(
+          children: [
+            HotelCard(hotel: booking.hotel, horizontal: true),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                  color: Colors.white, borderRadius: BorderRadius.circular(20)),
+              child: Column(children: [
+                _row('Booking ID', booking.id.substring(0, 8).toUpperCase()),
+                _row('Check In', formatDateId(booking.checkIn)),
+                _row('Check Out', formatDateId(booking.checkOut)),
+                _row('Guest', booking.guestName),
+                _row('Room', '${booking.rooms} x ${booking.roomType}'),
+                _row('Durasi', '${booking.nights} malam'),
+              ]),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                  color: Colors.white, borderRadius: BorderRadius.circular(20)),
+              child: Column(children: [
+                _row('Subtotal', formatRupiah(booking.subtotal)),
+                _row('Pajak & biaya layanan', formatRupiah(booking.tax)),
+                const Divider(),
+                _row('Total', formatRupiah(booking.total), bold: true),
+                _row('Payment Method',
+                    '${booking.paymentMethodCode ?? '-'} (SakuRupiah)'),
+                _row('Payment Status', booking.paymentStatus),
+                if (booking.trxId != null) _row('ID Transaksi', booking.trxId!),
+              ]),
+            ),
+            const SizedBox(height: 22),
+            Container(
+              height: 70,
+              decoration: BoxDecoration(
+                  color: Colors.white, borderRadius: BorderRadius.circular(16)),
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(
+                      36,
+                      (i) => Container(
+                          width: i % 3 == 0 ? 3 : 1.6,
+                          height: 44,
+                          color: Colors.black87))),
+            ),
+            const SizedBox(height: 24),
+            Row(children: [
+              Expanded(
+                  child: PrimaryButton(
+                      text: 'Back',
+                      isOutline: true,
+                      onPressed: () => Navigator.pop(context))),
+              const SizedBox(width: 14),
+              Expanded(
+                  child: PrimaryButton(
+                      text: 'Download',
+                      onPressed: () => showErrorSnackBar(
+                          context, 'E-receipt ditampilkan di halaman ini'))),
             ]),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-                color: Colors.white, borderRadius: BorderRadius.circular(20)),
-            child: Column(children: [
-              _row('Price', '\$${booking.hotel.price.toStringAsFixed(2)}'),
-              _row('Tax', '\$15.18'),
-              const Divider(),
-              _row('Total', '\$${booking.total.toStringAsFixed(2)}',
-                  bold: true),
-              _row('Payment Method', 'Cash'),
-            ]),
-          ),
-          const SizedBox(height: 22),
-          // Fake barcode
-          Container(
-            height: 70,
-            decoration: BoxDecoration(
-                color: Colors.white, borderRadius: BorderRadius.circular(16)),
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(
-                    36,
-                    (i) => Container(
-                        width: i % 3 == 0 ? 3 : 1.6,
-                        height: 44,
-                        color: Colors.black87))),
-          ),
-          const SizedBox(height: 24),
-          Row(children: [
-            Expanded(
-                child: PrimaryButton(
-                    text: 'Back to Home',
-                    isOutline: true,
-                    onPressed: () => Navigator.pop(context))),
-            const SizedBox(width: 14),
-            Expanded(child: PrimaryButton(text: 'Download', onPressed: () {})),
-          ]),
-        ]),
+          ],
+        ),
       ),
     );
   }
@@ -80,9 +90,11 @@ class EReceiptScreen extends StatelessWidget {
         child:
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Text(k, style: const TextStyle(color: AppColors.textGrey)),
-          Text(v,
-              style: TextStyle(
-                  fontWeight: bold ? FontWeight.bold : FontWeight.w600)),
+          Flexible(
+              child: Text(v,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                      fontWeight: bold ? FontWeight.bold : FontWeight.w600))),
         ]),
       );
 }

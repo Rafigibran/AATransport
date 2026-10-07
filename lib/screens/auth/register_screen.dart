@@ -1,11 +1,75 @@
 import 'package:flutter/material.dart';
+import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../home/main_screen.dart';
 import 'login_screen.dart';
 
-class RegisterScreen extends StatelessWidget {
+class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final _name = TextEditingController();
+  final _email = TextEditingController();
+  final _phone = TextEditingController();
+  final _password = TextEditingController();
+  bool _loading = false;
+  bool _obscure = true;
+  bool _agree = true;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _email.dispose();
+    _phone.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _register() async {
+    if (_name.text.trim().isEmpty ||
+        _email.text.trim().isEmpty ||
+        _password.text.length < 6) {
+      showErrorSnackBar(
+          context, 'Nama & email wajib diisi, password minimal 6 karakter');
+      return;
+    }
+    if (!_agree) {
+      showErrorSnackBar(
+          context, 'Kamu perlu menyetujui Syarat & Kebijakan Privasi');
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      final res = await AuthService.signUp(
+          _name.text, _email.text, _password.text, _phone.text);
+      if (!mounted) return;
+      if (res.session != null) {
+        Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const MainScreen()),
+            (_) => false);
+      } else {
+        showSuccessDialog(
+          context,
+          title: 'Registrasi Berhasil',
+          message: 'Silakan cek email kamu untuk konfirmasi akun, lalu login.',
+          buttonText: 'Ke Halaman Login',
+          onDone: () => Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+              (_) => false),
+        );
+      }
+    } catch (e) {
+      if (mounted) showErrorSnackBar(context, e);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,78 +83,64 @@ class RegisterScreen extends StatelessWidget {
             const Text("Let's Get Started!",
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            const Text('Create an account to continue',
+            const Text('Buat akun untuk melanjutkan',
                 style: TextStyle(color: AppColors.textGrey)),
             const SizedBox(height: 28),
-            const AppTextField(
+            AppTextField(
                 label: 'Full Name',
-                hint: 'Alul Ahmad',
-                icon: Icons.person_outline),
+                hint: 'Nama lengkap',
+                icon: Icons.person_outline,
+                controller: _name),
             const SizedBox(height: 18),
-            const AppTextField(
+            AppTextField(
                 label: 'Email',
-                hint: 'alalahmad03@gmail.com',
-                icon: Icons.email_outlined),
+                hint: 'email@contoh.com',
+                icon: Icons.email_outlined,
+                controller: _email),
             const SizedBox(height: 18),
-            const AppTextField(
-                label: 'Password',
-                hint: '••••••••••',
-                icon: Icons.lock_outline,
-                obscure: true,
-                suffix: Icon(Icons.visibility_off_outlined, size: 20)),
-            const SizedBox(height: 16),
+            AppTextField(
+                label: 'No. Handphone',
+                hint: '08xxxxxxxxxx',
+                icon: Icons.phone_outlined,
+                controller: _phone),
+            const SizedBox(height: 18),
+            AppTextField(
+              label: 'Password',
+              hint: '••••••••••',
+              icon: Icons.lock_outline,
+              obscure: _obscure,
+              controller: _password,
+              suffix: IconButton(
+                icon: Icon(
+                    _obscure
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    size: 20),
+                onPressed: () => setState(() => _obscure = !_obscure),
+              ),
+            ),
+            const SizedBox(height: 12),
             Row(children: [
               Checkbox(
-                  value: true,
-                  onChanged: (_) {},
+                  value: _agree,
+                  onChanged: (v) => setState(() => _agree = v ?? false),
                   activeColor: AppColors.primary),
               const Expanded(
-                  child: Text('I agree to the Terms and Privacy Policy',
+                  child: Text('Saya setuju dengan Syarat dan Kebijakan Privasi',
                       style: TextStyle(fontSize: 13))),
             ]),
             const SizedBox(height: 14),
             PrimaryButton(
-                text: 'Register',
-                onPressed: () => Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const MainScreen()),
-                    (_) => false)),
-            const SizedBox(height: 22),
-            const Row(children: [
-              Expanded(child: Divider()),
-              Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: Text('Or')),
-              Expanded(child: Divider())
-            ]),
-            const SizedBox(height: 22),
-            Row(children: [
-              Expanded(
-                  child: OutlinedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.g_mobiledata),
-                      label: const Text('Google'),
-                      style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 52),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14))))),
-              const SizedBox(width: 14),
-              Expanded(
-                  child: OutlinedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.facebook),
-                      label: const Text('Facebook'),
-                      style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 52),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14))))),
-            ]),
+                text: _loading ? 'Memproses...' : 'Register',
+                onPressed: _loading ? null : _register),
             const SizedBox(height: 24),
             Center(
-                child: TextButton(
-                    onPressed: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const LoginScreen())),
-                    child: const Text('Already have an account? Log In'))),
+              child: TextButton(
+                onPressed: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen())),
+                child: const Text('Already have an account? Log In'),
+              ),
+            ),
           ],
         ),
       ),

@@ -1,43 +1,52 @@
 # Hipo - Check-in to Comfort
 
-Aplikasi booking hotel **frontend only** menggunakan Flutter, dibuat berdasarkan referensi desain Hipo.
+Aplikasi booking hotel menggunakan Flutter dengan backend **Supabase** dan
+pembayaran **SakuRupiah**. Semua fitur sudah berfungsi (bukan mock lagi).
 
 ## Cara Menjalankan
+
+Siapkan dulu backend sesuai panduan di [BACKEND_SETUP.md](BACKEND_SETUP.md)
+(jalankan SQL migration, atur Auth, deploy Edge Functions pembayaran), lalu:
 
 ```bash
 flutter pub get
 flutter run
 ```
 
-Sudah diverifikasi dengan `flutter analyze`, `flutter test`, dan `flutter build web` (Flutter 3.24.3).
+## Fitur
 
-## Fitur UI
-
-- Splash Screen
-- Onboarding (3 halaman)
-- Auth: Register, Login, Forgot Password, OTP Verification, Reset Password
-- Home: Search hotel, Popular Hotel, Offer List
-- Hotel Details: Facilities, Description, Photos, Location, Rating & Reviews
-- Booking Flow: Booking Info, Calendar Picker, Payment Method, Add New Card, Guest Info, Review Summary, Payment Success
-- My Booking: Upcoming / Completed / Cancelled, E-Receipt
-- Favourites
-- Add Review
-- Profile & Logout dialog
-
-> Catatan: Ini hanya frontend. Semua data masih mock/dummy di `lib/data/mock_data.dart`. Gambar hotel menggunakan network image dari Unsplash (butuh koneksi internet saat run).
+- Splash Screen & Onboarding
+- Auth Supabase: Register, Login, Forgot Password (OTP email), Reset Password
+- Home: cari hotel, Popular Hotel, Offer List (data dari Supabase)
+- Hotel Details: fasilitas, deskripsi, foto, lokasi, rating & reviews dari database
+- Favourite per user
+- Booking Flow: pilih tanggal, tamu/kamar, tipe kamar, metode pembayaran
+  SakuRupiah (QRIS, VA bank, e-wallet, Alfamart/Indomaret), info tamu,
+  review summary dalam Rupiah
+- Pembayaran: checkout SakuRupiah via Edge Function, nomor VA/QR,
+  cek status pembayaran, webhook callback mengonfirmasi booking
+- My Booking: Upcoming / Completed / Cancelled, batalkan booking, E-Receipt
+- Add Review (rating hotel terupdate otomatis)
+- Metode pembayaran tersimpan (channel favorit, tanpa data kartu)
+- Profile: edit nama/no. HP, Logout
 
 ## Struktur
 
 ```
 lib/
   main.dart
+  config/supabase_config.dart
   theme/app_theme.dart
   models/hotel.dart
-  data/mock_data.dart
+  services/app_services.dart
+  utils/format.dart
   widgets/
   screens/
     auth/
     home/
     booking/
     profile/
+supabase/
+  migrations/     SQL skema + RLS + seed hotel (Rupiah)
+  functions/      create-payment, payment-callback, check-payment, payment-return
 ```

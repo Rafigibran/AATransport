@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../models/hotel.dart';
+import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/format.dart';
 import '../../widgets/common_widgets.dart';
 import 'guest_info_screen.dart';
 
@@ -12,83 +14,29 @@ class BookingInfoScreen extends StatefulWidget {
 }
 
 class _BookingInfoScreenState extends State<BookingInfoScreen> {
-  int selectedDay = 9;
-  String selectedPayment = 'Cash';
+  DateTime _checkIn = DateTime.now().add(const Duration(days: 7));
+  DateTime _checkOut = DateTime.now().add(const Duration(days: 10));
+  int _guests = 1;
+  int _rooms = 1;
+  String _roomType = 'Economy Room';
+  PaymentChannel _channel = paymentChannels.first;
 
-  void _openCalendar() {
-    showModalBottomSheet(
+  Future<void> _pickDates() async {
+    final picked = await showDateRangePicker(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        padding: const EdgeInsets.all(22),
-        decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            const Text('Select Date',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-            IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close)),
-          ]),
-          const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(Icons.chevron_left),
-                Text('June - 2025',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                Icon(Icons.chevron_right)
-              ]),
-          const SizedBox(height: 14),
-          const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Text('Sun'),
-                Text('Mon'),
-                Text('Tue'),
-                Text('Wed'),
-                Text('Thu'),
-                Text('Fri'),
-                Text('Sat')
-              ]),
-          const SizedBox(height: 10),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 7, mainAxisSpacing: 8, crossAxisSpacing: 8),
-            itemCount: 30,
-            itemBuilder: (_, i) {
-              final day = i + 1;
-              final selected = day == selectedDay || day == selectedDay + 3;
-              return GestureDetector(
-                onTap: () => setState(() => selectedDay = day),
-                child: Container(
-                  decoration: BoxDecoration(
-                      color: selected ? AppColors.primary : Colors.transparent,
-                      shape: BoxShape.circle),
-                  child: Center(
-                      child: Text('$day',
-                          style: TextStyle(
-                              color:
-                                  selected ? Colors.white : AppColors.textDark,
-                              fontWeight: selected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal))),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 18),
-          PrimaryButton(
-              text: 'Continue', onPressed: () => Navigator.pop(context)),
-        ]),
-      ),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: DateTimeRange(start: _checkIn, end: _checkOut),
     );
+    if (picked != null) {
+      setState(() {
+        _checkIn = picked.start;
+        _checkOut = picked.end;
+      });
+    }
   }
 
-  void _openPayment() {
+  void _pickChannel() {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -98,182 +46,294 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
         child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Payment Methods',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-              const SizedBox(height: 16),
-              RadioListTile<String>(
-                  value: 'Cash',
-                  groupValue: selectedPayment,
-                  onChanged: (v) => setState(() => selectedPayment = v!),
-                  title: const Text('Cash'),
-                  secondary: const Icon(Icons.money, color: AppColors.primary)),
-              RadioListTile<String>(
-                  value: 'Mastercard ****5432',
-                  groupValue: selectedPayment,
-                  onChanged: (v) => setState(() => selectedPayment = v!),
-                  title: const Text('Mastercard ****5432'),
-                  secondary:
-                      const Icon(Icons.credit_card, color: AppColors.primary)),
-              ListTile(
-                  leading: const Icon(Icons.add_circle_outline,
-                      color: AppColors.primary),
-                  title: const Text('Add New Card'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const AddCardScreen()));
-                  }),
-              const SizedBox(height: 10),
-              PrimaryButton(
-                  text: 'Continue', onPressed: () => Navigator.pop(context)),
-            ]),
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Metode Pembayaran (SakuRupiah)',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+            const SizedBox(height: 8),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: paymentChannels
+                    .map((c) => RadioListTile<String>(
+                          value: c.code,
+                          groupValue: _channel.code,
+                          onChanged: (v) {
+                            setState(() => _channel =
+                                paymentChannels.firstWhere((e) => e.code == v));
+                            Navigator.pop(context);
+                          },
+                          title: Text(c.name),
+                          secondary: const Icon(Icons.payments_outlined,
+                              color: AppColors.primary),
+                        ))
+                    .toList(),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const SavedPaymentMethodsScreen()));
+              },
+              icon: const Icon(Icons.bookmark_outline),
+              label: const Text('Kelola metode tersimpan'),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final nights = _checkOut.difference(_checkIn).inDays;
     return Scaffold(
       appBar: AppBar(
           title: const Text('Booking Info'), leading: const BackButton()),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Column(children: [
-          HotelCard(hotel: widget.hotel, horizontal: true),
-          _field('Check In', '09/05/25', Icons.calendar_month_outlined,
-              onTap: _openCalendar),
-          _field('Check Out', '12/05/25', Icons.calendar_month_outlined,
-              onTap: _openCalendar),
-          const Row(children: [
-            Expanded(
-                child: AppTextField(
-                    label: 'Guest',
-                    hint: '1 Guest',
-                    icon: Icons.person_outline)),
-            SizedBox(width: 12),
-            Expanded(
-                child: AppTextField(
-                    label: 'Room', hint: '1 Room', icon: Icons.bed_outlined)),
-          ]),
-          const SizedBox(height: 18),
-          const AppTextField(
-              label: 'Room Type',
-              hint: 'Economy Room',
-              icon: Icons.meeting_room_outlined,
-              suffix: Icon(Icons.keyboard_arrow_down)),
-          const SizedBox(height: 18),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Payment Method',
-                style: TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text(selectedPayment),
-            trailing: const Icon(Icons.keyboard_arrow_right),
-            onTap: _openPayment,
-          ),
-          const SizedBox(height: 28),
-          PrimaryButton(
+        child: Column(
+          children: [
+            HotelCard(hotel: widget.hotel, horizontal: true),
+            _dateField('Check In', formatDateId(_checkIn)),
+            _dateField('Check Out', formatDateId(_checkOut)),
+            Row(children: [
+              Expanded(
+                  child: _stepper(
+                      'Guest', _guests, (v) => setState(() => _guests = v))),
+              const SizedBox(width: 12),
+              Expanded(
+                  child: _stepper(
+                      'Room', _rooms, (v) => setState(() => _rooms = v))),
+            ]),
+            const SizedBox(height: 18),
+            InputDecorator(
+              decoration: const InputDecoration(
+                  labelText: 'Room Type',
+                  prefixIcon: Icon(Icons.meeting_room_outlined)),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _roomType,
+                  isExpanded: true,
+                  items: ['Economy Room', 'Deluxe Room', 'Suite', 'Family Room']
+                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                      .toList(),
+                  onChanged: (v) => setState(() => _roomType = v ?? _roomType),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Metode Pembayaran',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text('${_channel.name} via SakuRupiah'),
+              trailing: const Icon(Icons.keyboard_arrow_right),
+              onTap: _pickChannel,
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                  color: Colors.white, borderRadius: BorderRadius.circular(16)),
+              child: Text(
+                  'Perkiraan total: ${formatRupiah(widget.hotel.price * (nights < 1 ? 1 : nights) * _rooms)} untuk ${nights < 1 ? 1 : nights} malam x $_rooms kamar (sebelum pajak 10%)',
+                  style: const TextStyle(color: AppColors.textGrey)),
+            ),
+            const SizedBox(height: 24),
+            PrimaryButton(
               text: 'Continue',
-              onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => GuestInfoScreen(hotel: widget.hotel)))),
-        ]),
+              onPressed: () {
+                if (nights < 1) {
+                  showErrorSnackBar(
+                      context, 'Tanggal check-out harus setelah check-in');
+                  return;
+                }
+                final draft = BookingDraft(
+                  hotel: widget.hotel,
+                  checkIn: _checkIn,
+                  checkOut: _checkOut,
+                  guests: _guests,
+                  rooms: _rooms,
+                  roomType: _roomType,
+                  paymentMethodCode: _channel.code,
+                );
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => GuestInfoScreen(draft: draft)));
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _field(String label, String value, IconData icon,
-      {VoidCallback? onTap}) {
+  Widget _dateField(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         InkWell(
-          onTap: onTap,
+          onTap: _pickDates,
           child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border)),
-              child: Row(children: [
-                Icon(icon, color: AppColors.textGrey, size: 20),
-                const SizedBox(width: 12),
-                Text(value)
-              ])),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border)),
+            child: Row(children: [
+              const Icon(Icons.calendar_month_outlined,
+                  color: AppColors.textGrey, size: 20),
+              const SizedBox(width: 12),
+              Text(value)
+            ]),
+          ),
         ),
       ]),
     );
   }
+
+  Widget _stepper(String label, int value, ValueChanged<int> onChanged) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      const SizedBox(height: 8),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border)),
+        child:
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          IconButton(
+              onPressed: value > 1 ? () => onChanged(value - 1) : null,
+              icon: const Icon(Icons.remove_circle_outline)),
+          Text('$value',
+              style:
+                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          IconButton(
+              onPressed: () => onChanged(value + 1),
+              icon: const Icon(Icons.add_circle_outline,
+                  color: AppColors.primary)),
+        ]),
+      ),
+    ]);
+  }
 }
 
-class AddCardScreen extends StatelessWidget {
-  const AddCardScreen({super.key});
+class SavedPaymentMethodsScreen extends StatefulWidget {
+  const SavedPaymentMethodsScreen({super.key});
+  @override
+  State<SavedPaymentMethodsScreen> createState() =>
+      _SavedPaymentMethodsScreenState();
+}
+
+class _SavedPaymentMethodsScreenState extends State<SavedPaymentMethodsScreen> {
+  late Future<List<Map<String, dynamic>>> _future =
+      ProfileService.savedPaymentMethods();
+
+  void _reload() =>
+      setState(() => _future = ProfileService.savedPaymentMethods());
+
+  Future<void> _add() async {
+    PaymentChannel selected = paymentChannels.first;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Simpan Metode Pembayaran'),
+        content: StatefulBuilder(
+          builder: (context, setLocal) => DropdownButton<String>(
+            value: selected.code,
+            isExpanded: true,
+            items: paymentChannels
+                .map(
+                    (c) => DropdownMenuItem(value: c.code, child: Text(c.name)))
+                .toList(),
+            onChanged: (v) => setLocal(() =>
+                selected = paymentChannels.firstWhere((e) => e.code == v)),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Batal')),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Simpan')),
+        ],
+      ),
+    );
+    if (ok == true) {
+      try {
+        await ProfileService.addSavedPaymentMethod(
+            selected.code, selected.name);
+        _reload();
+      } catch (e) {
+        if (mounted) showErrorSnackBar(context, e);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: const Text('Add New Card'), leading: const BackButton()),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(22),
-            height: 190,
-            decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                    colors: [AppColors.primary, AppColors.primaryDark]),
-                borderRadius: BorderRadius.circular(24)),
-            child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('2569 **** **** 5432',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold)),
-                        Icon(Icons.credit_card, color: Colors.white)
-                      ]),
-                  Spacer(),
-                  Text('Esther Howard', style: TextStyle(color: Colors.white)),
-                  Text('02/30', style: TextStyle(color: Colors.white70)),
-                ]),
-          ),
-          const SizedBox(height: 24),
-          const AppTextField(
-              label: 'Card Holder',
-              hint: 'Alul Ahmad',
-              icon: Icons.person_outline),
-          const SizedBox(height: 16),
-          const AppTextField(
-              label: 'Card Number',
-              hint: '2569 **** **** 5432',
-              icon: Icons.credit_card_outlined),
-          const SizedBox(height: 16),
-          const Row(children: [
-            Expanded(child: AppTextField(label: 'Expiry', hint: '02/30')),
-            SizedBox(width: 12),
-            Expanded(
-                child: AppTextField(label: 'CVV', hint: '900', obscure: true))
-          ]),
-          const Spacer(),
-          PrimaryButton(
-              text: 'Add Card',
-              onPressed: () => showSuccessDialog(context,
-                  title: 'Successfully added card!',
-                  message: 'Your card has been added successfully.',
-                  onDone: () => Navigator.pop(context))),
-        ]),
+          title: const Text('Metode Pembayaran Tersimpan'),
+          leading: const BackButton()),
+      floatingActionButton: FloatingActionButton(
+          onPressed: _add,
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          child: const Icon(Icons.add)),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting)
+            return const LoadingView();
+          if (snapshot.hasError)
+            return ErrorView(
+                message: 'Gagal memuat metode pembayaran.', onRetry: _reload);
+          final items = snapshot.data ?? [];
+          if (items.isEmpty)
+            return const ErrorView(
+                message:
+                    'Belum ada metode pembayaran tersimpan.\nTekan tombol + untuk menambahkan channel SakuRupiah favoritmu.');
+          return ListView.builder(
+            padding: const EdgeInsets.all(20),
+            itemCount: items.length,
+            itemBuilder: (_, i) {
+              final item = items[i];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16)),
+                child: ListTile(
+                  leading: const Icon(Icons.payments_outlined,
+                      color: AppColors.primary),
+                  title: Text(item['label'].toString()),
+                  subtitle: Text(item['method_code'].toString()),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    onPressed: () async {
+                      await ProfileService.deleteSavedPaymentMethod(
+                          item['id'].toString());
+                      _reload();
+                    },
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

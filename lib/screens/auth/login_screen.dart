@@ -1,12 +1,47 @@
 import 'package:flutter/material.dart';
+import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../home/main_screen.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  bool _loading = false;
+  bool _obscure = true;
+
+  @override
+  void dispose() {
+    _email.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    if (_email.text.trim().isEmpty || _password.text.isEmpty) {
+      showErrorSnackBar(context, 'Email dan password wajib diisi');
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      await AuthService.signIn(_email.text, _password.text);
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(context,
+          MaterialPageRoute(builder: (_) => const MainScreen()), (_) => false);
+    } catch (e) {
+      if (mounted) showErrorSnackBar(context, e);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,66 +55,46 @@ class LoginScreen extends StatelessWidget {
             const Text('Welcome Back!',
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            const Text('Sign in to continue your journey',
+            const Text('Masuk untuk melanjutkan perjalananmu',
                 style: TextStyle(color: AppColors.textGrey)),
             const SizedBox(height: 28),
-            const AppTextField(
+            AppTextField(
                 label: 'Email',
-                hint: 'alalahmad03@gmail.com',
-                icon: Icons.email_outlined),
+                hint: 'email@contoh.com',
+                icon: Icons.email_outlined,
+                controller: _email),
             const SizedBox(height: 18),
-            const AppTextField(
-                label: 'Password',
-                hint: '••••••••••',
-                icon: Icons.lock_outline,
-                obscure: true,
-                suffix: Icon(Icons.visibility_off_outlined, size: 20)),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Checkbox(
-                    value: true,
-                    onChanged: (_) {},
-                    activeColor: AppColors.primary),
-                const Text('Remember Me'),
-                const Spacer(),
-                TextButton(
-                    onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const ForgotPasswordScreen())),
-                    child: const Text('Forgot Password')),
-              ],
+            AppTextField(
+              label: 'Password',
+              hint: '••••••••••',
+              icon: Icons.lock_outline,
+              obscure: _obscure,
+              controller: _password,
+              suffix: IconButton(
+                icon: Icon(
+                    _obscure
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    size: 20),
+                onPressed: () => setState(() => _obscure = !_obscure),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const ForgotPasswordScreen())),
+                child: const Text('Forgot Password'),
+              ),
             ),
             const SizedBox(height: 16),
             PrimaryButton(
-                text: 'Log In',
-                onPressed: () => Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const MainScreen()),
-                    (_) => false)),
-            const SizedBox(height: 22),
-            const Row(children: [
-              Expanded(child: Divider()),
-              Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child:
-                      Text('Or', style: TextStyle(color: AppColors.textGrey))),
-              Expanded(child: Divider())
-            ]),
-            const SizedBox(height: 22),
-            Row(
-              children: [
-                Expanded(
-                    child: _SocialButton(
-                        label: 'Google', icon: Icons.g_mobiledata)),
-                const SizedBox(width: 14),
-                Expanded(
-                    child:
-                        _SocialButton(label: 'Facebook', icon: Icons.facebook)),
-              ],
-            ),
-            const SizedBox(height: 26),
+                text: _loading ? 'Memproses...' : 'Log In',
+                onPressed: _loading ? null : _login),
+            const SizedBox(height: 24),
             Center(
               child: TextButton(
                 onPressed: () => Navigator.push(context,
@@ -90,24 +105,6 @@ class LoginScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _SocialButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  const _SocialButton({required this.label, required this.icon});
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: () {},
-      icon: Icon(icon, color: AppColors.primary),
-      label: Text(label),
-      style: OutlinedButton.styleFrom(
-          minimumSize: const Size(0, 52),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
     );
   }
 }

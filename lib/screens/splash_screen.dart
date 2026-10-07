@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
 import 'onboarding_screen.dart';
+import 'home/main_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,8 +16,18 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     Future.delayed(const Duration(seconds: 2), () {
       if (!mounted) return;
+      bool loggedIn = false;
+      try {
+        loggedIn = Supabase.instance.client.auth.currentSession != null;
+      } catch (_) {
+        loggedIn = false;
+      }
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (_) => const OnboardingScreen()));
+        context,
+        MaterialPageRoute(
+            builder: (_) =>
+                loggedIn ? const MainScreen() : const OnboardingScreen()),
+      );
     });
   }
 

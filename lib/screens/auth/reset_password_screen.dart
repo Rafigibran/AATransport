@@ -1,10 +1,58 @@
 import 'package:flutter/material.dart';
+import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import 'login_screen.dart';
 
-class ResetPasswordScreen extends StatelessWidget {
+class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
+  @override
+  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
+}
+
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+  final _password = TextEditingController();
+  final _confirm = TextEditingController();
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    _password.dispose();
+    _confirm.dispose();
+    super.dispose();
+  }
+
+  Future<void> _reset() async {
+    if (_password.text.length < 6) {
+      showErrorSnackBar(context, 'Password baru minimal 6 karakter');
+      return;
+    }
+    if (_password.text != _confirm.text) {
+      showErrorSnackBar(context, 'Konfirmasi password tidak sama');
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      await AuthService.updatePassword(_password.text);
+      await AuthService.signOut();
+      if (!mounted) return;
+      showSuccessDialog(
+        context,
+        title: 'Reset Your Password!',
+        message:
+            'Password kamu berhasil direset. Silakan login dengan password baru.',
+        onDone: () => Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+            (_) => false),
+      );
+    } catch (e) {
+      if (mounted) showErrorSnackBar(context, e);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -17,35 +65,26 @@ class ResetPasswordScreen extends StatelessWidget {
             const Text('Reset Your Password!',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
-            const Text('Create a new password for your account.',
+            const Text('Buat password baru untuk akun kamu.',
                 style: TextStyle(color: AppColors.textGrey)),
             const SizedBox(height: 28),
-            const AppTextField(
+            AppTextField(
                 label: 'New Password',
                 hint: '••••••••••',
                 icon: Icons.lock_outline,
                 obscure: true,
-                suffix: Icon(Icons.visibility_outlined, size: 20)),
+                controller: _password),
             const SizedBox(height: 18),
-            const AppTextField(
+            AppTextField(
                 label: 'Confirm Password',
                 hint: '••••••',
                 icon: Icons.lock_outline,
                 obscure: true,
-                suffix: Icon(Icons.visibility_off_outlined, size: 20)),
+                controller: _confirm),
             const Spacer(),
             PrimaryButton(
-              text: 'Reset Password',
-              onPressed: () => showSuccessDialog(
-                context,
-                title: 'Reset Your Password!',
-                message: 'Your password has been successfully reset.',
-                onDone: () => Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    (_) => false),
-              ),
-            ),
+                text: _loading ? 'Memproses...' : 'Reset Password',
+                onPressed: _loading ? null : _reset),
           ],
         ),
       ),

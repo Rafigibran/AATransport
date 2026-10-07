@@ -1,61 +1,100 @@
 import 'package:flutter/material.dart';
 import '../../models/hotel.dart';
+import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/format.dart';
 import '../../widgets/common_widgets.dart';
-import '../home/main_screen.dart';
+import 'payment_screen.dart';
 
-class ReviewSummaryScreen extends StatelessWidget {
-  final Hotel hotel;
-  const ReviewSummaryScreen({super.key, required this.hotel});
+class ReviewSummaryScreen extends StatefulWidget {
+  final BookingDraft draft;
+  final String guestName;
+  final String guestEmail;
+  final String guestPhone;
+  const ReviewSummaryScreen(
+      {super.key,
+      required this.draft,
+      required this.guestName,
+      required this.guestEmail,
+      required this.guestPhone});
+  @override
+  State<ReviewSummaryScreen> createState() => _ReviewSummaryScreenState();
+}
+
+class _ReviewSummaryScreenState extends State<ReviewSummaryScreen> {
+  bool _paying = false;
+
+  Future<void> _pay() async {
+    setState(() => _paying = true);
+    try {
+      final booking = await BookingService.createBooking(widget.draft,
+          guestName: widget.guestName,
+          guestEmail: widget.guestEmail,
+          guestPhone: widget.guestPhone);
+      final payment = await BookingService.createPayment(
+          booking.id, widget.draft.paymentMethodCode);
+      if (!mounted) return;
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) =>
+                  PaymentScreen(booking: booking, payment: payment)));
+    } catch (e) {
+      if (mounted) showErrorSnackBar(context, e);
+    } finally {
+      if (mounted) setState(() => _paying = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    const tax = 15.18;
-    final total = hotel.price + tax;
+    final d = widget.draft;
+    final channelName = paymentChannels
+        .firstWhere((c) => c.code == d.paymentMethodCode,
+            orElse: () => paymentChannels.first)
+        .name;
     return Scaffold(
       appBar: AppBar(
           title: const Text('Review Summary'), leading: const BackButton()),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          HotelCard(hotel: hotel, horizontal: true),
-          const Text('Booking Details',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-          const SizedBox(height: 12),
-          _row('Check In', '09/05/25 | 11:30 AM'),
-          _row('Check Out', '12/05/25'),
-          _row('Guest', '01'),
-          _row('Room', '01'),
-          const Divider(height: 28),
-          const Text('Guest Details',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-          const SizedBox(height: 12),
-          _row('Name', 'Alul Ahmad'),
-          _row('Email', 'alalahmad03@gmail.com'),
-          _row('Phone', '+880 1234567891'),
-          const Divider(height: 28),
-          const Text('Payment Details',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-          const SizedBox(height: 12),
-          _row('Price', '\$${hotel.price.toStringAsFixed(2)}'),
-          _row('Tax', '\$${tax.toStringAsFixed(2)}'),
-          const Divider(),
-          _row('Total Amount', '\$${total.toStringAsFixed(2)}', bold: true),
-          _row('Payment Method', 'Cash'),
-          const SizedBox(height: 30),
-          PrimaryButton(
-            text: 'Pay \$${total.toStringAsFixed(2)}',
-            onPressed: () => showSuccessDialog(
-              context,
-              title: 'Payment Successful!',
-              message: 'Your booking has been confirmed. Enjoy your stay!',
-              onDone: () => Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const MainScreen()),
-                  (_) => false),
-            ),
-          ),
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            HotelCard(hotel: d.hotel, horizontal: true),
+            const Text('Booking Details',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+            const SizedBox(height: 12),
+            _row('Check In', formatDateId(d.checkIn)),
+            _row('Check Out', formatDateId(d.checkOut)),
+            _row('Guest', '${d.guests}'),
+            _row('Room', '${d.rooms} - ${d.roomType}'),
+            _row('Durasi', '${d.nights} malam'),
+            const Divider(height: 28),
+            const Text('Guest Details',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+            const SizedBox(height: 12),
+            _row('Name', widget.guestName),
+            _row('Email', widget.guestEmail),
+            _row('Phone', widget.guestPhone),
+            const Divider(height: 28),
+            const Text('Payment Details',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+            const SizedBox(height: 12),
+            _row('Harga per malam', formatRupiah(d.hotel.price)),
+            _row('Subtotal', formatRupiah(d.subtotal)),
+            _row('Pajak & biaya layanan (10%)', formatRupiah(d.tax)),
+            const Divider(),
+            _row('Total Amount', formatRupiah(d.total), bold: true),
+            _row('Payment Method', '$channelName (SakuRupiah)'),
+            const SizedBox(height: 30),
+            PrimaryButton(
+                text: _paying
+                    ? 'Memproses Pembayaran...'
+                    : 'Bayar ${formatRupiah(d.total)}',
+                onPressed: _paying ? null : _pay),
+          ],
+        ),
       ),
     );
   }
@@ -68,10 +107,12 @@ class ReviewSummaryScreen extends StatelessWidget {
             style: TextStyle(
                 color: AppColors.textGrey,
                 fontWeight: bold ? FontWeight.bold : FontWeight.normal)),
-        Text(v,
-            style: TextStyle(
-                fontWeight: bold ? FontWeight.bold : FontWeight.w600,
-                color: bold ? AppColors.primary : AppColors.textDark)),
+        Flexible(
+            child: Text(v,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                    fontWeight: bold ? FontWeight.bold : FontWeight.w600,
+                    color: bold ? AppColors.primary : AppColors.textDark))),
       ]),
     );
   }
