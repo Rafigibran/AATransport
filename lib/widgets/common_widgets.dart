@@ -1,0 +1,262 @@
+import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
+import '../models/hotel.dart';
+
+class PrimaryButton extends StatelessWidget {
+  final String text;
+  final VoidCallback? onPressed;
+  final bool isOutline;
+  const PrimaryButton(
+      {super.key, required this.text, this.onPressed, this.isOutline = false});
+
+  @override
+  Widget build(BuildContext context) {
+    if (isOutline) {
+      return OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(double.infinity, 54),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          side: const BorderSide(color: AppColors.primary),
+        ),
+        child: Text(text),
+      );
+    }
+    return ElevatedButton(onPressed: onPressed, child: Text(text));
+  }
+}
+
+class AppTextField extends StatelessWidget {
+  final String hint;
+  final String? label;
+  final IconData? icon;
+  final bool obscure;
+  final TextEditingController? controller;
+  final Widget? suffix;
+  const AppTextField(
+      {super.key,
+      required this.hint,
+      this.label,
+      this.icon,
+      this.obscure = false,
+      this.controller,
+      this.suffix});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (label != null) ...[
+          Text(label!,
+              style: const TextStyle(
+                  fontWeight: FontWeight.w600, color: AppColors.textDark)),
+          const SizedBox(height: 8),
+        ],
+        TextField(
+          controller: controller,
+          obscureText: obscure,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(color: AppColors.textGrey),
+            prefixIcon: icon != null
+                ? Icon(icon, color: AppColors.textGrey, size: 20)
+                : null,
+            suffixIcon: suffix,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class HotelCard extends StatelessWidget {
+  final Hotel hotel;
+  final VoidCallback? onTap;
+  final bool horizontal;
+  const HotelCard(
+      {super.key, required this.hotel, this.onTap, this.horizontal = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: horizontal ? null : 220,
+        margin: EdgeInsets.only(
+            right: horizontal ? 0 : 14, bottom: horizontal ? 14 : 0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 12,
+                offset: const Offset(0, 4))
+          ],
+        ),
+        child: horizontal
+            ? Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.horizontal(
+                        left: Radius.circular(20)),
+                    child: Image.network(hotel.image,
+                        width: 110,
+                        height: 110,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                            width: 110,
+                            height: 110,
+                            color: Colors.grey.shade200,
+                            child: const Icon(Icons.hotel))),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: _info(),
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(20)),
+                    child: Image.network(hotel.image,
+                        height: 130,
+                        width: 220,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                            height: 130,
+                            color: Colors.grey.shade200,
+                            child: const Icon(Icons.hotel, size: 40))),
+                  ),
+                  Padding(padding: const EdgeInsets.all(12), child: _info()),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _info() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+                child: Text(hotel.name,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 15),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis)),
+            const Icon(Icons.star, color: AppColors.star, size: 16),
+            const SizedBox(width: 4),
+            Text(hotel.rating.toString(),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Row(children: [
+          const Icon(Icons.location_on_outlined,
+              size: 14, color: AppColors.textGrey),
+          const SizedBox(width: 4),
+          Text(hotel.location,
+              style: const TextStyle(color: AppColors.textGrey, fontSize: 12)),
+        ]),
+        const SizedBox(height: 8),
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                  text:
+                      '\$${hotel.price.toStringAsFixed(hotel.price % 1 == 0 ? 0 : 1)}',
+                  style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16)),
+              const TextSpan(
+                  text: ' /night',
+                  style: TextStyle(color: AppColors.textGrey, fontSize: 12)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class SectionHeader extends StatelessWidget {
+  final String title;
+  final VoidCallback? onSeeAll;
+  const SectionHeader({super.key, required this.title, this.onSeeAll});
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title,
+            style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textDark)),
+        if (onSeeAll != null)
+          TextButton(
+              onPressed: onSeeAll,
+              child: const Text('View All',
+                  style: TextStyle(color: AppColors.primary))),
+      ],
+    );
+  }
+}
+
+void showSuccessDialog(BuildContext context,
+    {required String title,
+    required String message,
+    String buttonText = 'Done',
+    VoidCallback? onDone}) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (_) => Container(
+      padding: const EdgeInsets.all(28),
+      decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.12),
+                shape: BoxShape.circle),
+            child: const Icon(Icons.check_circle,
+                color: AppColors.primary, size: 42),
+          ),
+          const SizedBox(height: 18),
+          Text(title,
+              style:
+                  const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text(message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textGrey)),
+          const SizedBox(height: 24),
+          PrimaryButton(
+              text: buttonText,
+              onPressed: () {
+                Navigator.pop(context);
+                onDone?.call();
+              }),
+        ],
+      ),
+    ),
+  );
+}
