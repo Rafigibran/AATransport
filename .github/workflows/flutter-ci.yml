@@ -23,6 +23,11 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Restore platform scaffolding
+        # Binary assets (launcher icons, gradle wrapper) are regenerated here
+        # because this repository was uploaded via the GitHub API (text files only).
+        run: flutter create --project-name hipo_app --org com.hipo .
+
       - name: Install dependencies
         run: flutter pub get
 
