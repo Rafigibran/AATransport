@@ -16,6 +16,10 @@ class _HomeScreenState extends State<HomeScreen> {
   final _search = TextEditingController();
   late Future<List<Car>> _future;
   Map<String, dynamic>? _profile;
+  DateTime _pickupDate = DateTime.now().add(const Duration(days: 7));
+  DateTime _returnDate = DateTime.now().add(const Duration(days: 10));
+  int _passengers = 1;
+  int _units = 1;
 
   @override
   void initState() {
@@ -23,6 +27,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _future = CarService.fetchCars();
     ProfileService.fetchProfile().then((p) {
       if (mounted) setState(() => _profile = p);
+    }).catchError((_) {
+      // The greeting can fall back to a generic name; the car catalogue has
+      // its own visible error/retry state.
     });
   }
 
@@ -34,6 +41,109 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _reload() {
     setState(() => _future = CarService.fetchCars(query: _search.text));
+  }
+
+  Future<void> _pickDates() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: DateTimeRange(start: _pickupDate, end: _returnDate),
+    );
+    if (picked != null) {
+      setState(() {
+        _pickupDate = picked.start;
+        _returnDate = picked.end;
+      });
+    }
+  }
+
+  Future<void> _pickCount({
+    required String title,
+    required int value,
+    required int min,
+    required int max,
+    required ValueChanged<int> onSelected,
+  }) async {
+    final selected = await showModalBottomSheet<int>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            ListTile(title: Text(title)),
+            for (var i = min; i <= max; i++)
+              ListTile(
+                title: Text('$i'),
+                trailing: i == value ? const Icon(Icons.check) : null,
+                onTap: () => Navigator.pop(context, i),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (selected != null) onSelected(selected);
+  }
+
+  void _showNotifications() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
+        decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+        child: FutureBuilder<List<Booking>>(
+          future: BookingService.fetchBookings(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(height: 180, child: LoadingView());
+            }
+            if (snapshot.hasError) {
+              return const SizedBox(
+                  height: 180,
+                  child: ErrorView(
+                      message: 'Notifikasi belum bisa dimuat. Coba lagi nanti.'));
+            }
+            final relevant = (snapshot.data ?? [])
+                .where((b) => b.tabStatus == 'upcoming')
+                .take(5)
+                .toList();
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Notifikasi',
+                    style:
+                        TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                if (relevant.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Text('Belum ada pengingat booking atau pembayaran.',
+                        style: TextStyle(color: AppColors.textGrey)),
+                  )
+                else
+                  ...relevant.map((b) => ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(
+                            b.isPaid
+                                ? Icons.event_available_outlined
+                                : Icons.payment_outlined,
+                            color: AppColors.primary),
+                        title: Text(b.isPaid
+                            ? 'Booking ${b.car.name} terkonfirmasi'
+                            : 'Pembayaran ${b.car.name} masih pending'),
+                        subtitle: Text(
+                            '${formatDateId(b.pickupDate)} - ${formatDateId(b.returnDate)}'),
+                      )),
+              ],
+            );
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -71,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     IconButton(
-                        onPressed: () {},
+                        onPressed: _showNotifications,
                         icon: const Icon(Icons.notifications_outlined)),
                   ],
                 ),
@@ -91,32 +201,50 @@ class _HomeScreenState extends State<HomeScreen> {
                       AppTextField(
                           hint: 'Cari car atau kota...',
                           icon: Icons.search,
-                          controller: _search),
+                          controller: _search,
+                          onSubmitted: (_) => _reload()),
                       const SizedBox(height: 14),
                       Row(children: [
                         Expanded(
-                            child: _infoChip(
-                                Icons.calendar_month_outlined,
-                                formatDateId(DateTime.now()
-                                    .add(const Duration(days: 7))))),
+                            child: GestureDetector(
+                                onTap: _pickDates,
+                                child: _infoChip(Icons.calendar_month_outlined,
+                                    formatDateId(_pickupDate)))),
                         const SizedBox(width: 12),
                         Expanded(
-                            child: _infoChip(
-                                Icons.calendar_month_outlined,
-                                formatDateId(DateTime.now()
-                                    .add(const Duration(days: 10))))),
+                            child: GestureDetector(
+                                onTap: _pickDates,
+                                child: _infoChip(Icons.calendar_month_outlined,
+                                    formatDateId(_returnDate)))),
                       ]),
                       const SizedBox(height: 14),
-                      const Row(children: [
+                      Row(children: [
                         Expanded(
-                            child: _StaticChip(
-                                icon: Icons.person_outline,
-                                text: '1 Penumpang')),
-                        SizedBox(width: 12),
+                            child: GestureDetector(
+                                onTap: () => _pickCount(
+                                      title: 'Jumlah penumpang',
+                                      value: _passengers,
+                                      min: 1,
+                                      max: 14,
+                                      onSelected: (v) =>
+                                          setState(() => _passengers = v),
+                                    ),
+                                child: _infoChip(Icons.person_outline,
+                                    '$_passengers Penumpang'))),
+                        const SizedBox(width: 12),
                         Expanded(
-                            child: _StaticChip(
-                                icon: Icons.directions_car_outlined,
-                                text: '1 Mobil')),
+                            child: GestureDetector(
+                                onTap: () => _pickCount(
+                                      title: 'Jumlah mobil',
+                                      value: _units,
+                                      min: 1,
+                                      max: 5,
+                                      onSelected: (v) =>
+                                          setState(() => _units = v),
+                                    ),
+                                child: _infoChip(
+                                    Icons.directions_car_outlined,
+                                    '$_units Mobil'))),
                       ]),
                       const SizedBox(height: 18),
                       PrimaryButton(text: 'Find Car', onPressed: _reload),
@@ -159,8 +287,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 await Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (_) =>
-                                            CarDetailsScreen(car: popular[i])));
+                                        builder: (_) => CarDetailsScreen(
+                                              car: popular[i],
+                                              initialPickupDate: _pickupDate,
+                                              initialReturnDate: _returnDate,
+                                              initialPassengers: _passengers,
+                                              initialUnits: _units,
+                                            )));
                                 _reload();
                               },
                             ),
@@ -176,8 +309,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 await Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (_) =>
-                                            CarDetailsScreen(car: h)));
+                                        builder: (_) => CarDetailsScreen(
+                                              car: h,
+                                              initialPickupDate: _pickupDate,
+                                              initialReturnDate: _returnDate,
+                                              initialPassengers: _passengers,
+                                              initialUnits: _units,
+                                            )));
                                 _reload();
                               },
                             )),
@@ -204,27 +342,6 @@ class _HomeScreenState extends State<HomeScreen> {
         Icon(icon, size: 19, color: AppColors.textGrey),
         const SizedBox(width: 8),
         Expanded(child: Text(text, style: const TextStyle(fontSize: 13)))
-      ]),
-    );
-  }
-}
-
-class _StaticChip extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  const _StaticChip({required this.icon, required this.text});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
-      decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border)),
-      child: Row(children: [
-        Icon(icon, size: 19, color: AppColors.textGrey),
-        const SizedBox(width: 8),
-        Text(text, style: const TextStyle(fontSize: 13))
       ]),
     );
   }

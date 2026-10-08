@@ -10,6 +10,7 @@ class Car {
   final String transmission; // Automatic / Manual
   final String fuelType; // Bensin / Diesel / Hybrid
   final int baggage; // number of large bags
+  final int totalUnits; // fleet units available for the same rental dates
   final double rating;
   final int reviews;
   final String description;
@@ -28,6 +29,7 @@ class Car {
     this.transmission = 'Automatic',
     this.fuelType = 'Bensin',
     this.baggage = 2,
+    this.totalUnits = 1,
     required this.rating,
     required this.reviews,
     required this.description,
@@ -48,6 +50,7 @@ class Car {
       transmission: transmission,
       fuelType: fuelType,
       baggage: baggage,
+      totalUnits: totalUnits,
       rating: rating,
       reviews: reviews,
       description: description,
@@ -90,6 +93,7 @@ class Car {
       transmission: (map['transmission'] ?? 'Automatic').toString(),
       fuelType: (map['fuel_type'] ?? 'Bensin').toString(),
       baggage: (map['baggage'] as num?)?.toInt() ?? 2,
+      totalUnits: (map['total_units'] as num?)?.toInt() ?? 1,
       rating: (map['rating'] as num?)?.toDouble() ?? 0,
       reviews: (map['review_count'] as num?)?.toInt() ?? 0,
       description: (map['description'] ?? '').toString(),
@@ -113,6 +117,9 @@ class Booking {
   final int days;
   final int subtotal;
   final int tax;
+  final int fee;
+  final double taxPercent;
+  final double feePercent;
   final int total;
   final String
       status; // pending_payment, confirmed, completed, cancelled, expired
@@ -138,6 +145,9 @@ class Booking {
     required this.days,
     required this.subtotal,
     required this.tax,
+    this.fee = 0,
+    this.taxPercent = 0,
+    this.feePercent = 0,
     required this.total,
     required this.status,
     required this.paymentStatus,
@@ -152,8 +162,11 @@ class Booking {
   /// Tab bucket used by My Booking: upcoming | completed | cancelled
   String get tabStatus {
     if (status == 'cancelled' || status == 'expired') return 'cancelled';
+    // Only a paid rental can become completed. An unpaid booking whose return
+    // date has passed stays in Upcoming so the user can still see/pay or
+    // cancel it instead of being offered a review for a rental that never ran.
     if (status == 'completed') return 'completed';
-    if (returnDate.isBefore(DateTime.now())) return 'completed';
+    if (isPaid && returnDate.isBefore(DateTime.now())) return 'completed';
     return 'upcoming';
   }
 
@@ -190,6 +203,9 @@ class Booking {
       days: (map['days'] as num?)?.toInt() ?? 1,
       subtotal: (map['subtotal'] as num?)?.toInt() ?? 0,
       tax: (map['tax'] as num?)?.toInt() ?? 0,
+      fee: (map['fee'] as num?)?.toInt() ?? 0,
+      taxPercent: (map['tax_percent'] as num?)?.toDouble() ?? 0,
+      feePercent: (map['fee_percent'] as num?)?.toDouble() ?? 0,
       total: (map['total'] as num?)?.toInt() ?? 0,
       status: (map['status'] ?? 'pending_payment').toString(),
       paymentStatus: (map['payment_status'] ?? 'pending').toString(),
@@ -238,6 +254,30 @@ class ReviewItem {
   }
 }
 
+/// Commercial pricing settings controlled from the admin panel.
+///
+/// Tax and service fee are disabled unless an admin enables them. Keeping the
+/// fallback at zero guarantees that a missing/unmigrated settings row can never
+/// silently add the old hard-coded 10% charge back to a booking.
+class AppSettings {
+  final double taxPercent;
+  final double feePercent;
+
+  const AppSettings({this.taxPercent = 0, this.feePercent = 0});
+
+  factory AppSettings.fromMap(Map<String, dynamic> map) {
+    double pct(dynamic value) {
+      final parsed = (value as num?)?.toDouble() ?? 0;
+      return parsed.clamp(0, 100).toDouble();
+    }
+
+    return AppSettings(
+      taxPercent: pct(map['tax_percent']),
+      feePercent: pct(map['fee_percent']),
+    );
+  }
+}
+
 class BookingDraft {
   final Car car;
   final DateTime pickupDate;
@@ -246,6 +286,7 @@ class BookingDraft {
   final int units;
   final String serviceType;
   final String paymentMethodCode;
+  final AppSettings settings;
 
   const BookingDraft({
     required this.car,
@@ -255,32 +296,44 @@ class BookingDraft {
     required this.units,
     required this.serviceType,
     required this.paymentMethodCode,
+    this.settings = const AppSettings(),
   });
 
   int get days => returnDate.difference(pickupDate).inDays;
   int get subtotal => car.price * days * units;
-  int get tax => (subtotal * 0.10).round(); // Pajak & biaya layanan 10%
-  int get total => subtotal + tax;
+  int get tax => (subtotal * settings.taxPercent / 100).round();
+  int get fee => (subtotal * settings.feePercent / 100).round();
+  int get total => subtotal + tax + fee;
 }
 
 class PaymentChannel {
   final String code;
   final String name;
-  const PaymentChannel(this.code, this.name);
+  final int minAmount;
+  final int maxAmount;
+  const PaymentChannel(this.code, this.name, this.minAmount, this.maxAmount);
+
+  bool supportsAmount(int amount) => amount >= minAmount && amount <= maxAmount;
 }
 
 const paymentChannels = <PaymentChannel>[
-  PaymentChannel('QRIS', 'QRIS'),
-  PaymentChannel('QRISC', 'QRIS (semua e-wallet)'),
-  PaymentChannel('BCAVA', 'BCA Virtual Account'),
-  PaymentChannel('BRIVA', 'BRI Virtual Account'),
-  PaymentChannel('BSIVA', 'BSI Virtual Account'),
-  PaymentChannel('BNCVA', 'BNC Virtual Account'),
-  PaymentChannel('DANAMON', 'Danamon Virtual Account'),
-  PaymentChannel('GOPAY', 'GoPay'),
-  PaymentChannel('ShopeePay', 'ShopeePay'),
-  PaymentChannel('ALFAMART', 'Alfamart'),
-  PaymentChannel('INDOMARET', 'Indomaret'),
+  PaymentChannel('QRIS', 'QRIS', 500, 2000000),
+  PaymentChannel('QRISC', 'QRIS (semua e-wallet)', 200, 20000000),
+  PaymentChannel('QRISMU', 'QRISMU', 500, 5000000),
+  PaymentChannel('QRIS2', 'QRIS2', 100, 10000000),
+  PaymentChannel('BCAVA', 'BCA Virtual Account', 10000, 15000000),
+  PaymentChannel('BRIVA', 'BRI Virtual Account', 10000, 10000000),
+  PaymentChannel('BSIVA', 'BSI Virtual Account', 10000, 20000000),
+  PaymentChannel('BNCVA', 'BNC Virtual Account', 10000, 10000000),
+  PaymentChannel('SINARMAS', 'Sinarmas Virtual Account', 10000, 10000000),
+  PaymentChannel('MUAMALAT', 'Muamalat Virtual Account', 10000, 15000000),
+  PaymentChannel('OCBC', 'OCBC Virtual Account', 10000, 10000000),
+  PaymentChannel('BAGVA', 'BAG Virtual Account', 10000, 15000000),
+  PaymentChannel('DANAMON', 'Danamon Virtual Account', 10000, 15000000),
+  PaymentChannel('GOPAY', 'GoPay', 500, 5000000),
+  PaymentChannel('ShopeePay', 'ShopeePay', 1000, 2000000),
+  PaymentChannel('ALFAMART', 'Alfamart', 10000, 5000000),
+  PaymentChannel('INDOMARET', 'Indomaret', 10000, 2500000),
 ];
 
 class PaymentResult {

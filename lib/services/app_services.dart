@@ -40,6 +40,28 @@ class AuthService {
   static bool get isLoggedIn => _db.auth.currentSession != null;
 }
 
+class SettingsService {
+  static AppSettings? _cache;
+
+  /// Loads admin-controlled pricing settings. Any failure intentionally
+  /// falls back to 0% tax/fee so a backend migration that has not run yet
+  /// cannot resurrect the removed hard-coded charge.
+  static Future<AppSettings> fetchSettings({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cache != null) return _cache!;
+    try {
+      final row = await _db
+          .from('app_settings')
+          .select('tax_percent, fee_percent')
+          .eq('id', 1)
+          .maybeSingle();
+      _cache = row == null ? const AppSettings() : AppSettings.fromMap(row);
+    } catch (_) {
+      _cache = const AppSettings();
+    }
+    return _cache!;
+  }
+}
+
 class CarService {
   static const _carColumns =
       '*, car_photos(url, sort_order), car_features(features(name))';
@@ -109,10 +131,38 @@ class CarService {
   static Future<List<ReviewItem>> fetchReviews(String carId) async {
     final rows = await _db
         .from('reviews')
-        .select('*, profiles(full_name, avatar_url)')
+        .select('*')
         .eq('car_id', carId)
         .order('created_at', ascending: false);
-    return rows.map((r) => ReviewItem.fromMap(r)).toList();
+    final mutableRows = rows.map((r) => Map<String, dynamic>.from(r)).toList();
+
+    // profiles are private under RLS. Reviewer names/avatars are exposed only
+    // through reviewer_profiles (migration 006), restricted to people who
+    // actually wrote a review. If that migration has not run yet, reviews
+    // still render with a generic customer name instead of failing.
+    try {
+      final userIds = mutableRows
+          .map((r) => r['user_id']?.toString())
+          .whereType<String>()
+          .toSet()
+          .toList();
+      if (userIds.isNotEmpty) {
+        final profiles = await _db
+            .from('reviewer_profiles')
+            .select('id, full_name, avatar_url')
+            .inFilter('id', userIds);
+        final profileById = <String, Map<String, dynamic>>{
+          for (final p in profiles) p['id'].toString(): p,
+        };
+        for (final row in mutableRows) {
+          final profile = profileById[row['user_id']?.toString()];
+          if (profile != null) row['profiles'] = profile;
+        }
+      }
+    } catch (_) {
+      // Keep the review list usable before migration 006 is deployed.
+    }
+    return mutableRows.map(ReviewItem.fromMap).toList();
   }
 
   static Future<void> addReview(
@@ -135,34 +185,128 @@ class CarService {
 class BookingService {
   static const _bookingColumns = '*, cars(*)';
 
+  /// Server-enforced when RPC `create_booking_secure` exists (migration 006);
+  /// this pre-check only improves the message shown before submitting.
+  static Future<int> availableUnits(
+      {required String carId,
+      required DateTime pickupDate,
+      required DateTime returnDate,
+      required int totalUnits}) async {
+    try {
+      final result = await _db.rpc('car_available_units', params: {
+        'p_car_id': carId,
+        'p_pickup_date': pickupDate.toIso8601String().substring(0, 10),
+        'p_return_date': returnDate.toIso8601String().substring(0, 10),
+      });
+      if (result is num) return result.toInt();
+      if (result is List && result.isNotEmpty && result.first is num) {
+        return (result.first as num).toInt();
+      }
+    } catch (_) {
+      // Migration 006 may not be deployed yet. The secure booking RPC (or the
+      // legacy insert fallback) remains the final authority.
+    }
+    return totalUnits;
+  }
+
   static Future<Booking> createBooking(BookingDraft draft,
       {required String customerName,
       required String customerEmail,
       required String customerPhone}) async {
     final uid = currentUserId;
     if (uid == null) throw Exception('Silakan login terlebih dahulu');
-    final row = await _db
-        .from('bookings')
-        .insert({
-          'user_id': uid,
-          'car_id': draft.car.id,
-          'pickup_date': draft.pickupDate.toIso8601String().substring(0, 10),
-          'return_date': draft.returnDate.toIso8601String().substring(0, 10),
-          'passengers': draft.passengers,
-          'units': draft.units,
-          'service_type': draft.serviceType,
-          'customer_name': customerName.trim(),
-          'customer_email': customerEmail.trim(),
-          'customer_phone': customerPhone.trim(),
-          'days': draft.days,
-          'subtotal': draft.subtotal,
-          'tax': draft.tax,
-          'total': draft.total,
-          'payment_method_code': draft.paymentMethodCode,
-        })
-        .select(_bookingColumns)
-        .single();
-    return Booking.fromMap(row);
+    final payload = <String, dynamic>{
+      'user_id': uid,
+      'car_id': draft.car.id,
+      'pickup_date': draft.pickupDate.toIso8601String().substring(0, 10),
+      'return_date': draft.returnDate.toIso8601String().substring(0, 10),
+      'passengers': draft.passengers,
+      'units': draft.units,
+      'service_type': draft.serviceType,
+      'customer_name': customerName.trim(),
+      'customer_email': customerEmail.trim(),
+      'customer_phone': customerPhone.trim(),
+      'days': draft.days,
+      'subtotal': draft.subtotal,
+      'tax': draft.tax,
+      'fee': draft.fee,
+      'tax_percent': draft.settings.taxPercent,
+      'fee_percent': draft.settings.feePercent,
+      'total': draft.total,
+      'payment_method_code': draft.paymentMethodCode,
+    };
+    try {
+      // Preferred path: the database recomputes price/tax/fee from the car and
+      // app_settings and rejects unavailable dates. This prevents a modified
+      // client from inventing a total or marking its own booking as paid.
+      final rpcResult = await _db.rpc('create_booking_secure', params: {
+        'p_car_id': draft.car.id,
+        'p_pickup_date': draft.pickupDate.toIso8601String().substring(0, 10),
+        'p_return_date': draft.returnDate.toIso8601String().substring(0, 10),
+        'p_passengers': draft.passengers,
+        'p_units': draft.units,
+        'p_service_type': draft.serviceType,
+        'p_customer_name': customerName.trim(),
+        'p_customer_email': customerEmail.trim(),
+        'p_customer_phone': customerPhone.trim(),
+        'p_payment_method_code': draft.paymentMethodCode,
+      });
+      final rpcRow = rpcResult is List && rpcResult.isNotEmpty
+          ? rpcResult.first
+          : rpcResult;
+      if (rpcRow is Map<String, dynamic>) {
+        final full = await _db
+            .from('bookings')
+            .select(_bookingColumns)
+            .eq('id', rpcRow['id'].toString())
+            .single();
+        return Booking.fromMap(full);
+      }
+      if (rpcRow is Map) {
+        final full = await _db
+            .from('bookings')
+            .select(_bookingColumns)
+            .eq('id', rpcRow['id'].toString())
+            .single();
+        return Booking.fromMap(full);
+      }
+      throw Exception('Respons pembuatan booking tidak valid');
+    } on PostgrestException catch (rpcError) {
+      // Before migration 006 is applied, rpc() returns PGRST202/function not
+      // found. Fall through to the original insert so an existing deployment
+      // keeps working during the upgrade window. Other RPC errors (notably
+      // availability) are real business errors and must be shown to the user.
+      final rpcMessage = '${rpcError.code} ${rpcError.message}'.toLowerCase();
+      final rpcMissing = rpcMessage.contains('pgrst202') ||
+          rpcMessage.contains('create_booking_secure') &&
+              (rpcMessage.contains('could not find') ||
+                  rpcMessage.contains('does not exist'));
+      if (!rpcMissing) throw Exception(rpcError.message);
+    }
+
+    try {
+      final row =
+          await _db.from('bookings').insert(payload).select(_bookingColumns).single();
+      return Booking.fromMap(row);
+    } on PostgrestException catch (e) {
+      // Compatibility while migration 005 has not been applied yet. The new
+      // pricing columns are optional snapshots; the core booking must still
+      // succeed against the original schema.
+      final message = '${e.code} ${e.message}'.toLowerCase();
+      if (!message.contains('fee') && !message.contains('tax_percent')) {
+        rethrow;
+      }
+      final legacyPayload = Map<String, dynamic>.from(payload)
+        ..remove('fee')
+        ..remove('tax_percent')
+        ..remove('fee_percent');
+      final row = await _db
+          .from('bookings')
+          .insert(legacyPayload)
+          .select(_bookingColumns)
+          .single();
+      return Booking.fromMap(row);
+    }
   }
 
   static Future<List<Booking>> fetchBookings() async {
@@ -180,6 +324,14 @@ class BookingService {
     await _db
         .from('bookings')
         .update({'status': 'cancelled'}).eq('id', bookingId);
+  }
+
+  /// Creates (or safely re-uses) the SakuRupiah invoice for an existing
+  /// booking. Used when the first payment attempt failed after the booking
+  /// row was saved, so the booking never becomes an unpaid orphan.
+  static Future<PaymentResult> retryPayment(
+      String bookingId, String? methodCode) async {
+    return createPayment(bookingId, methodCode ?? 'QRIS');
   }
 
   static Future<PaymentResult> createPayment(

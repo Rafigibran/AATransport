@@ -20,9 +20,11 @@ flutter run --dart-define=SUPABASE_URL=https://xxxx.supabase.co --dart-define=SU
 
 1. Buka Supabase Dashboard → **SQL Editor**
 2. Copy seluruh isi file `supabase/migrations/202610080001_init_aatransport.sql`
-3. **Run**. Setelah itu jalankan juga `supabase/migrations/202610080002_admin_panel.sql`
-   untuk mengaktifkan website admin panel (role admin, policies kelola data,
-   log admin — lihat `admin-panel/ADMIN_PANEL_SETUP.md`). File ini membuat tabel `profiles`, `cars`, `car_photos`,
+3. **Run**. Setelah itu jalankan juga, secara berurutan:
+   - `supabase/migrations/202610080002_admin_panel.sql` untuk website admin panel;
+   - `supabase/migrations/202610080005_app_settings.sql` untuk pengaturan pajak/fee;
+   - `supabase/migrations/202610080006_security_booking_integrity.sql` untuk perhitungan booking server-side, kapasitas armada, dan penguncian status pembayaran.
+4. File-file ini membuat tabel `profiles`, `cars`, `car_photos`,
    `features`, `car_features`, `favourites`, `bookings`, `payments`,
    `reviews`, `saved_payment_methods`, lengkap dengan RLS, trigger profil
    otomatis saat user register, bucket Storage `car-images`, dan seed
@@ -92,8 +94,10 @@ Fungsi pembayaran:
 | E-Receipt | Detail booking & pembayaran dari database |
 | Review | Rating/komentar; rating mobil terupdate otomatis via trigger |
 
-Semua harga menggunakan Rupiah per hari (`Rp350.000/hari`), pajak & biaya
-layanan 10% dihitung di ringkasan booking.
+Semua harga menggunakan Rupiah per hari (`Rp350.000/hari`). Pajak & biaya
+layanan default 0% dan dapat diatur dari Admin Panel → Pengaturan
+(tabel `app_settings`, migration `202610080005_app_settings.sql`).
+Lihat `SAKURUPIAH_AKTIVASI.md` untuk checklist aktivasi gateway pembayaran.
 
 ## 5. Menjalankan aplikasi
 
