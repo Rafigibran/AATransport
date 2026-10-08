@@ -1,73 +1,13 @@
 <!doctype html>
 <html lang="id">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>A&A Transport — Admin Panel</title>
-  <meta name="description" content="Panel admin A&A Transport: kelola mobil, booking, pembayaran, pelanggan, dan review." />
-  <link rel="stylesheet" href="styles.css" />
-  <script src="config.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-</head>
-<body>
-  <!-- LOGIN -->
-  <section id="loginView" class="login-wrap hidden">
-    <div class="login-card">
-      <div class="brand brand-center"><span class="brand-badge">🚗</span><div><h1>A&A Transport</h1><p>Admin Panel</p></div></div>
-      <form id="loginForm">
-        <label>Email admin<input id="loginEmail" type="email" required placeholder="admin@contoh.com" /></label>
-        <label>Password<input id="loginPassword" type="password" required placeholder="••••••••" /></label>
-        <button class="btn primary full" type="submit">Masuk Dashboard</button>
-        <p id="loginError" class="error"></p>
-      </form>
-      <p class="hint">Login hanya untuk akun dengan role <b>admin</b>. Buat akun lewat aplikasi/website, lalu jadikan admin dengan SQL di menu Pengaturan atau ikuti <code>ADMIN_PANEL_SETUP.md</code>.</p>
-    </div>
-  </section>
-
-  <!-- APP -->
-  <div id="appView" class="layout hidden">
-    <aside class="sidebar">
-      <div class="brand"><span class="brand-badge">🚗</span><div><h1>A&A Transport</h1><p>Admin Panel</p></div></div>
-      <nav id="sideNav">
-        <button data-page="dashboard" class="active">📊 Dashboard</button>
-        <button data-page="cars">🚘 Mobil</button>
-        <button data-page="bookings">📅 Booking</button>
-        <button data-page="calendar">🗓️ Kalender Rental</button>
-        <button data-page="payments">💳 Pembayaran</button>
-        <button data-page="customers">👥 Pelanggan</button>
-        <button data-page="reviews">⭐ Review</button>
-        <button data-page="reports">📈 Laporan</button>
-        <button data-page="logs">🧾 Log Admin</button>
-        <button data-page="settings">⚙️ Pengaturan</button>
-      </nav>
-      <div class="sidebar-foot">
-        <div id="adminIdentity" class="admin-id">-</div>
-        <button id="logoutBtn" class="btn danger full">Logout</button>
-      </div>
-    </aside>
-
-    <main class="main">
-      <header class="topbar">
-        <button id="menuBtn" class="btn ghost only-mobile">☰</button>
-        <div><h2 id="pageTitle">Dashboard</h2><p id="pageSubtitle">Ringkasan bisnis A&A Transport</p></div>
-        <div class="top-actions">
-          <input id="globalSearch" placeholder="Cari mobil, booking, pelanggan..." />
-          <button id="refreshBtn" class="btn">↻ Muat Ulang</button>
-        </div>
-      </header>
-      <div id="toast" class="toast hidden"></div>
-      <section id="pageContent"></section>
-    </main>
-  </div>
-
-  <!-- MODAL -->
-  <div id="modalBackdrop" class="modal-backdrop hidden">
-    <div class="modal">
-      <div class="modal-head"><h3 id="modalTitle">Detail</h3><button id="modalClose" class="btn ghost">✕</button></div>
-      <div id="modalBody"></div>
-    </div>
-  </div>
-
-  <script src="app.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A&A Transport — Admin Panel</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>

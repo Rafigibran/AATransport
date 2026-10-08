@@ -62,3 +62,7 @@ build/
 **/ios/Flutter/flutter_export_environment.sh
 **/ios/Podfile.lock
 **/macos/Flutter/ephemeral/
+
+# Admin panel (React)
+admin-panel/node_modules/
+admin-panel/dist/

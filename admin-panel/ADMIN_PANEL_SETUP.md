@@ -1,6 +1,6 @@
 # Admin Panel A&A Transport — Panduan Setup
 
-Website admin panel ada di folder `admin-panel/` (HTML/CSS/JS statis, tanpa build).
+Website admin panel ada di folder `admin-panel/` dan dibuat dengan **ReactJS (Vite + React + @supabase/supabase-js)**.
 Backend tetap Supabase yang sama dengan aplikasi Flutter, jadi semua perubahan
 di panel langsung terbaca di aplikasi.
 
@@ -44,15 +44,25 @@ Lokal (untuk mencoba):
 
 ```bash
 cd admin-panel
-python3 -m http.server 8000
-# buka http://localhost:8000
+npm install
+npm run dev
+# buka http://localhost:5173
+```
+
+Build production:
+
+```bash
+npm run build
+# hasil static production ada di folder admin-panel/dist/
 ```
 
 Deploy statis (pilih salah satu):
 
-- **GitHub Pages / Netlify / Vercel:** publish folder `admin-panel/` apa adanya.
-- Konfigurasi Supabase ada di `admin-panel/config.js` (publishable key, aman
-  untuk client karena data dilindungi RLS + role admin).
+- **GitHub Pages / Netlify / Vercel:** deploy hasil build dari folder `dist/`
+  (atau atur root/build command: `npm run build`, publish directory: `dist`).
+- Konfigurasi Supabase ada di `admin-panel/src/supabaseClient.js` dan bisa
+  dioverride dengan env `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY`
+  (publishable key aman untuk client karena data dilindungi RLS + role admin).
 
 ## 4. Cek status pembayaran dari panel
 
