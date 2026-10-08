@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/car.dart';
 import '../../services/app_services.dart';
@@ -16,9 +18,31 @@ class PaymentScreen extends StatefulWidget {
   State<PaymentScreen> createState() => _PaymentScreenState();
 }
 
-class _PaymentScreenState extends State<PaymentScreen> {
+class _PaymentScreenState extends State<PaymentScreen>
+    with WidgetsBindingObserver {
   bool _checking = false;
   String? _status;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Returning from SakuRupiah checkout should refresh the booking status
+    // instead of leaving the user on a stale pending screen.
+    if (state == AppLifecycleState.resumed && !_checking) {
+      _checkStatus(silent: true);
+    }
+  }
 
   Future<void> _openCheckout() async {
     final url = widget.payment.checkoutUrl ?? widget.booking.checkoutUrl;
@@ -28,15 +52,31 @@ class _PaymentScreenState extends State<PaymentScreen> {
       return;
     }
     final uri = Uri.tryParse(url);
-    if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final opened = uri != null &&
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && mounted) {
+      showErrorSnackBar(
+          context, 'Tidak dapat membuka halaman pembayaran SakuRupiah');
+    }
   }
 
-  Future<void> _checkStatus() async {
+  Future<void> _copyPaymentNo() async {
+    final paymentNo = widget.payment.paymentNo ?? widget.booking.paymentNo;
+    if (paymentNo == null || paymentNo.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: paymentNo));
+    if (mounted) {
+      showErrorSnackBar(context, 'Nomor pembayaran disalin');
+    }
+  }
+
+  Future<void> _checkStatus({bool silent = false}) async {
+    if (_checking) return;
     setState(() => _checking = true);
     try {
       final status = await BookingService.checkPayment(widget.booking.id);
       setState(() => _status = status);
       if (!mounted) return;
+      if (silent && status == 'pending') return;
       if (status == 'berhasil') {
         showSuccessDialog(
           context,
@@ -56,7 +96,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             'Pembayaran masih pending. Selesaikan pembayaran lalu cek lagi.');
       }
     } catch (e) {
-      if (mounted) showErrorSnackBar(context, e);
+      if (!silent && mounted) showErrorSnackBar(context, e);
     } finally {
       if (mounted) setState(() => _checking = false);
     }
@@ -89,8 +129,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   _row('Metode',
                       p.methodCode ?? widget.booking.paymentMethodCode ?? '-'),
                   _row('Total', formatRupiah(widget.booking.total)),
-                  if (p.paymentNo != null)
+                  if (p.paymentNo != null) ...[
                     _row('No. Pembayaran / VA', p.paymentNo!),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: _copyPaymentNo,
+                        icon: const Icon(Icons.copy_outlined, size: 16),
+                        label: const Text('Salin nomor pembayaran'),
+                      ),
+                    ),
+                  ],
                   if (p.trxId != null) _row('ID Transaksi', p.trxId!),
                   _row('Status', _status ?? widget.booking.paymentStatus),
                 ],
@@ -106,16 +155,30 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     borderRadius: BorderRadius.circular(20)),
                 child: Column(
                   children: [
-                    const Icon(Icons.qr_code_2,
-                        size: 72, color: AppColors.primary),
+                    QrImageView(
+                      data: p.qrString!,
+                      version: QrVersions.auto,
+                      size: 220,
+                      eyeStyle: const QrEyeStyle(
+                          eyeShape: QrEyeShape.square,
+                          color: AppColors.textDark),
+                      dataModuleStyle: const QrDataModuleStyle(
+                          dataModuleShape: QrDataModuleShape.square,
+                          color: AppColors.textDark),
+                    ),
                     const SizedBox(height: 10),
-                    const Text('Kode QR / payload pembayaran:',
+                    const Text('Pindai QR ini dengan aplikasi pembayaran',
                         style: TextStyle(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
-                    SelectableText(p.qrString!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            color: AppColors.textGrey, fontSize: 12)),
+                    ExpansionTile(
+                      title: const Text('Lihat payload QR'),
+                      children: [
+                        SelectableText(p.qrString!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                                color: AppColors.textGrey, fontSize: 12)),
+                      ],
+                    ),
                   ],
                 ),
               ),

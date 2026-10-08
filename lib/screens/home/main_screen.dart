@@ -14,20 +14,27 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   late int _index = widget.initialIndex;
-  final _pages = const [
-    HomeScreen(),
-    MyBookingScreen(),
-    FavouritesScreen(),
-    ProfileScreen()
-  ];
+  int _favouritesVersion = 0;
 
   @override
   Widget build(BuildContext context) {
+    final pages = [
+      const HomeScreen(),
+      const MyBookingScreen(),
+      FavouritesScreen(key: ValueKey('favourites-$_favouritesVersion')),
+      const ProfileScreen(),
+    ];
     return Scaffold(
-      body: IndexedStack(index: _index, children: _pages),
+      body: IndexedStack(index: _index, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
+        onDestinationSelected: (i) => setState(() {
+          _index = i;
+          // Favourites is kept mounted by IndexedStack; rebuild it whenever
+          // its tab becomes active so favourite changes made elsewhere are
+          // never shown stale.
+          if (i == 2) _favouritesVersion++;
+        }),
         backgroundColor: Colors.white,
         indicatorColor: AppColors.primary.withOpacity(0.14),
         destinations: const [

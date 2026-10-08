@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/car.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
@@ -8,7 +9,18 @@ import '../booking/booking_info_screen.dart';
 
 class CarDetailsScreen extends StatefulWidget {
   final Car car;
-  const CarDetailsScreen({super.key, required this.car});
+  final DateTime? initialPickupDate;
+  final DateTime? initialReturnDate;
+  final int? initialPassengers;
+  final int? initialUnits;
+  const CarDetailsScreen({
+    super.key,
+    required this.car,
+    this.initialPickupDate,
+    this.initialReturnDate,
+    this.initialPassengers,
+    this.initialUnits,
+  });
   @override
   State<CarDetailsScreen> createState() => _CarDetailsScreenState();
 }
@@ -21,6 +33,34 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
   void initState() {
     super.initState();
     _reviews = CarService.fetchReviews(_car.id);
+  }
+
+  void _openPhoto(String url) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        child: InteractiveViewer(
+          child: Image.network(
+            url,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const SizedBox(
+              height: 220,
+              child: Center(child: Text('Foto tidak dapat dimuat')),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openLocation() async {
+    final query = Uri.encodeComponent('${_car.name} ${_car.location}');
+    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else if (mounted) {
+      showErrorSnackBar(context, 'Tidak dapat membuka aplikasi peta');
+    }
   }
 
   IconData _facilityIcon(String f) {
@@ -179,34 +219,47 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                       scrollDirection: Axis.horizontal,
                       itemCount: _car.photos.length,
                       separatorBuilder: (_, __) => const SizedBox(width: 12),
-                      itemBuilder: (_, i) => ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.network(_car.photos[i],
-                              width: 110,
-                              height: 90,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                  width: 110, color: Colors.grey.shade200))),
+                      itemBuilder: (_, i) => GestureDetector(
+                          onTap: () => _openPhoto(_car.photos[i]),
+                          child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.network(_car.photos[i],
+                                  width: 110,
+                                  height: 90,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                      width: 110,
+                                      color: Colors.grey.shade200)))),
                     ),
                   ),
                   const SizedBox(height: 22),
                   const SectionHeader(title: 'Lokasi Penjemputan'),
                   const SizedBox(height: 12),
-                  Container(
-                    height: 150,
-                    decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(20)),
-                    child: Center(
-                        child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                          const Icon(Icons.location_on,
-                              color: AppColors.primary, size: 36),
-                          const SizedBox(height: 6),
-                          Text(_car.location,
-                              style: const TextStyle(color: AppColors.textGrey))
-                        ])),
+                  InkWell(
+                    onTap: _openLocation,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      height: 150,
+                      decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(20)),
+                      child: Center(
+                          child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                            const Icon(Icons.location_on,
+                                color: AppColors.primary, size: 36),
+                            const SizedBox(height: 6),
+                            Text(_car.location,
+                                style:
+                                    const TextStyle(color: AppColors.textGrey)),
+                            const SizedBox(height: 6),
+                            const Text('Ketuk untuk membuka peta',
+                                style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600))
+                          ])),
+                    ),
                   ),
                   const SizedBox(height: 22),
                   const SectionHeader(title: 'Rating & Reviews'),
@@ -216,36 +269,10 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                         style: const TextStyle(
                             fontSize: 36, fontWeight: FontWeight.bold)),
                     const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        children: List.generate(
-                            5,
-                            (i) => Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 2),
-                                  child: Row(children: [
-                                    Text('${5 - i}',
-                                        style: const TextStyle(fontSize: 12)),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                        child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(99),
-                                            child: LinearProgressIndicator(
-                                                value: [
-                                                  0.85,
-                                                  0.6,
-                                                  0.3,
-                                                  0.15,
-                                                  0.08
-                                                ][i],
-                                                backgroundColor:
-                                                    AppColors.border,
-                                                color: AppColors.star,
-                                                minHeight: 6))),
-                                  ]),
-                                )),
-                      ),
+                    const Expanded(
+                      child: Text(
+                          'Distribusi bintang dihitung dari review pelanggan di bawah.',
+                          style: TextStyle(color: AppColors.textGrey)),
                     ),
                   ]),
                   const SizedBox(height: 16),
@@ -255,13 +282,55 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const LoadingView();
                       }
+                      if (snapshot.hasError) {
+                        return ErrorView(
+                            message: 'Gagal memuat review. Coba lagi nanti.',
+                            onRetry: () =>
+                                setState(() => _reviews = CarService.fetchReviews(widget.car.id)));
+                      }
                       final reviews = snapshot.data ?? [];
                       if (reviews.isEmpty) {
                         return const Text('Belum ada review untuk car ini.',
                             style: TextStyle(color: AppColors.textGrey));
                       }
+                      final counts = List<int>.filled(5, 0);
+                      for (final review in reviews) {
+                        final star = review.rating.round().clamp(1, 5);
+                        counts[5 - star]++;
+                      }
                       return Column(
-                        children: reviews
+                        children: [
+                          ...List.generate(
+                              5,
+                              (i) => Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 2),
+                                    child: Row(children: [
+                                      Text('${5 - i}',
+                                          style:
+                                              const TextStyle(fontSize: 12)),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                          child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(99),
+                                              child: LinearProgressIndicator(
+                                                  value: reviews.isEmpty
+                                                      ? 0
+                                                      : counts[i] /
+                                                          reviews.length,
+                                                  backgroundColor:
+                                                      AppColors.border,
+                                                  color: AppColors.star,
+                                                  minHeight: 6))),
+                                      const SizedBox(width: 6),
+                                      Text('${counts[i]}',
+                                          style:
+                                              const TextStyle(fontSize: 12)),
+                                    ]),
+                                  )),
+                          const SizedBox(height: 16),
+                          ...reviews
                             .map((r) => Container(
                                   margin: const EdgeInsets.only(bottom: 12),
                                   padding: const EdgeInsets.all(14),
@@ -319,8 +388,8 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                                               ]),
                                         ),
                                       ]),
-                                ))
-                            .toList(),
+                                )),
+                        ],
                       );
                     },
                   ),
@@ -355,7 +424,13 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                   onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => BookingInfoScreen(car: _car))),
+                          builder: (_) => BookingInfoScreen(
+                                car: _car,
+                                initialPickupDate: widget.initialPickupDate,
+                                initialReturnDate: widget.initialReturnDate,
+                                initialPassengers: widget.initialPassengers,
+                                initialUnits: widget.initialUnits,
+                              ))),
                   child: const Text('Sewa Sekarang'))),
         ]),
       ),
