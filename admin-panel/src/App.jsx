@@ -150,8 +150,13 @@ function CarsPage({ data, search, reload, logAdmin, toast, setModal }) {
         <form onSubmit={async (e) => {
           e.preventDefault();
           const fd = new FormData(e.target);
-          const payload = { name: fd.get('name'), location: fd.get('location'), price_per_day: Number(fd.get('price_per_day')), image_url: fd.get('image_url'), car_type: fd.get('car_type'), seats: Number(fd.get('seats')), transmission: fd.get('transmission'), fuel_type: fd.get('fuel_type'), baggage: Number(fd.get('baggage')), is_active: fd.get('is_active') === 'true', description: fd.get('description') };
-          const res = car ? await supabase.from('cars').update(payload).eq('id', car.id).select().single() : await supabase.from('cars').insert(payload).select().single();
+          const payload = { name: fd.get('name'), location: fd.get('location'), price_per_day: Number(fd.get('price_per_day')), image_url: fd.get('image_url'), car_type: fd.get('car_type'), seats: Number(fd.get('seats')), transmission: fd.get('transmission'), fuel_type: fd.get('fuel_type'), baggage: Number(fd.get('baggage')), total_units: Math.max(1, Number(fd.get('total_units') || 1)), is_active: fd.get('is_active') === 'true', description: fd.get('description') };
+          let res = car ? await supabase.from('cars').update(payload).eq('id', car.id).select().single() : await supabase.from('cars').insert(payload).select().single();
+          if (res.error && String(res.error.message || '').toLowerCase().includes('total_units')) {
+            const legacyPayload = { ...payload };
+            delete legacyPayload.total_units;
+            res = car ? await supabase.from('cars').update(legacyPayload).eq('id', car.id).select().single() : await supabase.from('cars').insert(legacyPayload).select().single();
+          }
           if (res.error) return toast(res.error.message, true);
           await supabase.from('car_features').delete().eq('car_id', res.data.id);
           const ids = fd.getAll('feature');
@@ -169,6 +174,7 @@ function CarsPage({ data, search, reload, logAdmin, toast, setModal }) {
             <label>Transmisi<select name="transmission" defaultValue={c.transmission || 'Automatic'}>{['Automatic', 'Manual'].map((t) => <option key={t}>{t}</option>)}</select></label>
             <label>Bahan bakar<select name="fuel_type" defaultValue={c.fuel_type || 'Bensin'}>{['Bensin', 'Diesel', 'Hybrid', 'Listrik'].map((t) => <option key={t}>{t}</option>)}</select></label>
             <label>Kapasitas bagasi<input name="baggage" type="number" min="0" defaultValue={c.baggage ?? 2} /></label>
+            <label>Total unit armada<input name="total_units" type="number" min="1" defaultValue={c.total_units || 1} /></label>
             <label>Status<select name="is_active" defaultValue={String(c.is_active !== false)}><option value="true">Aktif</option><option value="false">Nonaktif</option></select></label>
             <label className="wide">Deskripsi<textarea name="description" rows="4" defaultValue={c.description || ''} /></label>
           </div>
@@ -209,16 +215,70 @@ function CarsPage({ data, search, reload, logAdmin, toast, setModal }) {
             await logAdmin('car_photo_add', 'cars', car.id, { url }); setModal(null); await reload();
           }}>
             <label>Tambah URL foto<input name="url" required placeholder="https://images.unsplash.com/..." /></label>
-            <button className="btn primary">Tambah Foto</button>
+            <button className="btn primary">Tambah Foto dari URL</button>
           </form>
-          <p className="hint">Foto utama diatur dari form Edit Mobil.</p>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            const file = new FormData(e.target).get('photo');
+            if (!file || !file.size) return toast('Pilih file foto terlebih dahulu', true);
+            const safeName = String(file.name || 'car-photo').replace(/[^a-zA-Z0-9._-]/g, '-');
+            const path = `${car.id}/${Date.now()}-${safeName}`;
+            const upload = await supabase.storage.from('car-images').upload(path, file, { cacheControl: '3600', upsert: false });
+            if (upload.error) return toast(upload.error.message, true);
+            const { data: publicData } = supabase.storage.from('car-images').getPublicUrl(path);
+            const { error } = await supabase.from('car_photos').insert({ car_id: car.id, url: publicData.publicUrl, sort_order: photos.length + 1 });
+            if (error) return toast(error.message, true);
+            await logAdmin('car_photo_upload', 'cars', car.id, { path }); setModal(null); await reload();
+          }}>
+            <label>Upload foto ke Storage<input name="photo" type="file" accept="image/*" required /></label>
+            <button className="btn">Upload Foto</button>
+          </form>
+          <p className="hint">Foto utama diatur dari form Edit Mobil. Upload memakai bucket publik <code>car-images</code>.</p>
+        </div>
+      ),
+    });
+  };
+  const openFeatures = () => {
+    setModal({
+      title: 'Kelola Fitur Mobil',
+      body: (
+        <div>
+          {data.features.map((f) => (
+            <form key={f.id} className="bar-row" onSubmit={async (e) => {
+              e.preventDefault();
+              const name = new FormData(e.target).get('name');
+              const { error } = await supabase.from('features').update({ name }).eq('id', f.id);
+              if (error) return toast(error.message, true);
+              await logAdmin('feature_update', 'features', f.id, { name }); setModal(null); await reload();
+            }}>
+              <input name="name" defaultValue={f.name} required />
+              <button className="btn small">Simpan</button>
+              <button className="btn danger small" type="button" onClick={async () => {
+                if (!confirm(`Hapus fitur ${f.name}?`)) return;
+                const { error } = await supabase.from('features').delete().eq('id', f.id);
+                if (error) return toast(error.message, true);
+                await logAdmin('feature_delete', 'features', f.id); setModal(null); await reload();
+              }}>Hapus</button>
+            </form>
+          ))}
+          {!data.features.length && <p className="muted">Belum ada fitur.</p>}
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            const name = new FormData(e.target).get('name');
+            const { error } = await supabase.from('features').insert({ name });
+            if (error) return toast(error.message, true);
+            await logAdmin('feature_create', 'features', null, { name }); setModal(null); await reload();
+          }}>
+            <label>Tambah fitur baru<input name="name" required placeholder="Contoh: Kamera Mundur" /></label>
+            <button className="btn primary">Tambah Fitur</button>
+          </form>
         </div>
       ),
     });
   };
   return (
     <>
-      <div className="toolbar"><button className="btn primary" onClick={() => openEditor(null)}>+ Tambah Mobil</button><span className="spacer" /><span className="muted">{list.length} mobil</span></div>
+      <div className="toolbar"><button className="btn primary" onClick={() => openEditor(null)}>+ Tambah Mobil</button><button className="btn" onClick={openFeatures}>Kelola Fitur</button><span className="spacer" /><span className="muted">{list.length} mobil</span></div>
       <div className="table-wrap"><table><thead><tr><th>Foto</th><th>Mobil</th><th>Lokasi</th><th>Harga</th><th>Rating</th><th>Status</th><th>Aksi</th></tr></thead>
         <tbody>{list.map((c) => (
           <tr key={c.id}><td>{c.image_url && <img className="thumb" src={c.image_url} alt="" />}</td>
@@ -251,7 +311,7 @@ function BookingsPage({ data, search, reload, logAdmin, toast, setModal, booking
     title: 'Detail Booking',
     body: (
       <div>
-        <dl className="kv"><dt>ID Booking</dt><dd>{b.id}</dd><dt>Mobil</dt><dd>{b.cars?.name || '-'}</dd><dt>Penyewa</dt><dd>{b.customer_name}</dd><dt>Email</dt><dd>{b.customer_email}</dd><dt>Telepon</dt><dd>{b.customer_phone}</dd><dt>Tanggal</dt><dd>{dateId(b.pickup_date)} s/d {dateId(b.return_date)} ({b.days} hari)</dd><dt>Layanan</dt><dd>{b.service_type} • {b.units} mobil • {b.passengers} penumpang</dd><dt>Subtotal</dt><dd>{rupiah(b.subtotal)}</dd><dt>Pajak</dt><dd>{rupiah(b.tax)}</dd><dt>Total</dt><dd>{rupiah(b.total)}</dd><dt>Metode</dt><dd>{b.payment_method_code || '-'} via SakuRupiah</dd><dt>Transaksi</dt><dd>{b.sakurupiah_trx_id || '-'}</dd><dt>No. VA/Pembayaran</dt><dd>{b.payment_no || '-'}</dd></dl>
+        <dl className="kv"><dt>ID Booking</dt><dd>{b.id}</dd><dt>Mobil</dt><dd>{b.cars?.name || '-'}</dd><dt>Penyewa</dt><dd>{b.customer_name}</dd><dt>Email</dt><dd>{b.customer_email}</dd><dt>Telepon</dt><dd>{b.customer_phone}</dd><dt>Tanggal</dt><dd>{dateId(b.pickup_date)} s/d {dateId(b.return_date)} ({b.days} hari)</dd><dt>Layanan</dt><dd>{b.service_type} • {b.units} mobil • {b.passengers} penumpang</dd><dt>Subtotal</dt><dd>{rupiah(b.subtotal)}</dd><dt>Pajak</dt><dd>{rupiah(b.tax)} ({b.tax_percent ?? 0}%)</dd><dt>Fee</dt><dd>{rupiah(b.fee || 0)} ({b.fee_percent ?? 0}%)</dd><dt>Total</dt><dd>{rupiah(b.total)}</dd><dt>Metode</dt><dd>{b.payment_method_code || '-'} via SakuRupiah</dd><dt>Transaksi</dt><dd>{b.sakurupiah_trx_id || '-'}</dd><dt>No. VA/Pembayaran</dt><dd>{b.payment_no || '-'}</dd></dl>
         <h4>Ubah Status Booking</h4>
         <div className="actions">{['pending_payment', 'confirmed', 'completed', 'cancelled', 'expired'].map((s) => (
           <button key={s} className="btn small" onClick={async () => {
@@ -281,8 +341,10 @@ function BookingsPage({ data, search, reload, logAdmin, toast, setModal, booking
 }
 
 function CalendarPage({ data, setModal, reload, toast }) {
-  const now = new Date();
+  const [cursor, setCursor] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
+  const now = cursor;
   const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const moveMonth = (delta) => setCursor((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1));
   const openBooking = (b) => setModal({
     title: 'Booking ' + String(b.id).slice(0, 8).toUpperCase(),
     body: (
@@ -296,12 +358,12 @@ function CalendarPage({ data, setModal, reload, toast }) {
     ),
   });
   return (
-    <div className="card"><h3>{now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })} — tanggal pengambilan mobil</h3>
+    <div className="card"><div className="actions" style={{ justifyContent: 'space-between', marginBottom: 14 }}><h3 style={{ margin: 0 }}>{now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })} — masa sewa aktif</h3><div className="actions"><button className="btn small" onClick={() => moveMonth(-1)}>Bulan sebelumnya</button><button className="btn small" onClick={() => { const d = new Date(); setCursor(new Date(d.getFullYear(), d.getMonth(), 1)); }}>Bulan ini</button><button className="btn small" onClick={() => moveMonth(1)}>Bulan berikutnya</button></div></div>
       <div className="calendar">{[...Array(days)].map((_, i) => {
         const d = i + 1;
         const key = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        const items = data.bookings.filter((b) => b.pickup_date === key && b.status !== 'cancelled');
-        return <div className="day" key={key}><div className="date">{d}</div>{items.map((b) => <div className="item" key={b.id} onClick={() => openBooking(b)}>🚗 {b.cars?.name || 'Mobil'}<br />{b.customer_name}</div>)}</div>;
+        const items = data.bookings.filter((b) => b.status !== 'cancelled' && b.pickup_date <= key && b.return_date >= key);
+        return <div className="day" key={key}><div className="date">{d}</div>{items.map((b) => <div className="item" key={b.id} onClick={() => openBooking(b)}>{b.pickup_date === key ? 'Ambil: ' : 'Sewa: '}{b.cars?.name || 'Mobil'}<br />{b.customer_name}</div>)}</div>;
       })}</div></div>
   );
 }
@@ -410,9 +472,59 @@ function LogsPage({ data }) {
   );
 }
 
-function SettingsPage({ profile, session, setPage }) {
+function SettingsPage({ profile, session, setPage, settings, reload, logAdmin, toast }) {
+  const [taxPercent, setTaxPercent] = useState('0');
+  const [feePercent, setFeePercent] = useState('0');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setTaxPercent(String(settings?.tax_percent ?? 0));
+    setFeePercent(String(settings?.fee_percent ?? 0));
+  }, [settings]);
+
+  const parsePercent = (value) => {
+    const parsed = Number(String(value).replace(',', '.'));
+    if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) return null;
+    return Math.round(parsed * 100) / 100;
+  };
+
+  const savePricing = async (e) => {
+    e.preventDefault();
+    const tax = parsePercent(taxPercent);
+    const fee = parsePercent(feePercent);
+    if (tax === null || fee === null) {
+      toast('Pajak dan fee harus berupa angka antara 0 sampai 100 persen', true);
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from('app_settings')
+      .upsert({ id: 1, tax_percent: tax, fee_percent: fee, updated_by: session.user.id, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+    setSaving(false);
+    if (error) {
+      toast(`Gagal menyimpan pengaturan: ${error.message}. Pastikan migration 202610080005_app_settings.sql sudah dijalankan.`, true);
+      return;
+    }
+    await logAdmin('settings_pricing_update', 'app_settings', 1, { tax_percent: tax, fee_percent: fee });
+    toast('Pengaturan pajak dan fee tersimpan. Booking baru akan memakai nilai ini.');
+    await reload();
+  };
+
   return (
     <div className="grid two">
+      <div className="card"><h3>Pajak & Biaya Layanan</h3>
+        <p className="hint">Default saat ini: <b>0%</b> (pajak dan fee nonaktif). Nilai yang disimpan di sini dibaca aplikasi Flutter untuk booking baru. Booking lama tidak berubah.</p>
+        <form onSubmit={savePricing}>
+          <label className="form-label">Pajak (%)
+            <input type="number" min="0" max="100" step="0.01" value={taxPercent} onChange={(e) => setTaxPercent(e.target.value)} />
+          </label>
+          <label className="form-label">Biaya layanan / fee (%)
+            <input type="number" min="0" max="100" step="0.01" value={feePercent} onChange={(e) => setFeePercent(e.target.value)} />
+          </label>
+          <button className="btn primary" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan Pengaturan'}</button>
+        </form>
+        {!settings && <p className="hint">Tabel pengaturan belum terbaca. Jalankan migration <code>202610080005_app_settings.sql</code> di Supabase SQL Editor.</p>}
+      </div>
       <div className="card"><h3>Koneksi Supabase</h3>
         <dl className="kv"><dt>Project URL</dt><dd>{SUPABASE_URL}</dd><dt>Admin Login</dt><dd>{profile?.email || session.user.email}</dd><dt>Role</dt><dd><Badge kind="blue">{profile?.role || '-'}</Badge></dd></dl>
         <p className="hint">Keamanan diatur oleh Supabase RLS. Hanya akun <b>profiles.role = 'admin'</b> yang bisa masuk panel ini.</p></div>
@@ -436,7 +548,7 @@ export default function App() {
   const [search, setSearch] = useState('');
   const [toastMsg, setToastMsg] = useState(null);
   const [modal, setModal] = useState(null);
-  const [data, setData] = useState({ cars: [], features: [], bookings: [], payments: [], customers: [], reviews: [], logs: [] });
+  const [data, setData] = useState({ cars: [], features: [], bookings: [], payments: [], customers: [], reviews: [], logs: [], settings: null });
   const [bookingStatus, setBookingStatus] = useState('');
   const [paymentStatus, setPaymentStatus] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -454,7 +566,7 @@ export default function App() {
   }, [session]);
 
   const loadAll = useCallback(async () => {
-    const [cars, features, bookings, payments, customers, reviews, logs] = await Promise.all([
+    const [cars, features, bookings, payments, customers, reviews, logs, settings] = await Promise.all([
       supabase.from('cars').select('*, car_photos(url, sort_order), car_features(feature_id, features(name))').order('created_at', { ascending: false }),
       supabase.from('features').select('*').order('name'),
       supabase.from('bookings').select('*, cars(name, image_url, location)').order('created_at', { ascending: false }).limit(500),
@@ -462,10 +574,16 @@ export default function App() {
       supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(500),
       supabase.from('reviews').select('*, cars(name), profiles(full_name, email)').order('created_at', { ascending: false }).limit(500),
       supabase.from('admin_logs').select('*, profiles(full_name, email)').order('created_at', { ascending: false }).limit(100),
+      supabase.from('app_settings').select('*').eq('id', 1).maybeSingle(),
     ]);
+    const loadErrors = [cars, features, bookings, payments, customers, reviews, logs]
+      .filter((result) => result.error)
+      .map((result) => result.error.message);
+    if (loadErrors.length) toast(`Sebagian data gagal dimuat: ${loadErrors[0]}`, true);
     setData({
       cars: cars.data || [], features: features.data || [], bookings: bookings.data || [],
       payments: payments.data || [], customers: customers.data || [], reviews: reviews.data || [], logs: logs.data || [],
+      settings: settings.error ? null : settings.data,
     });
   }, []);
 
@@ -529,7 +647,7 @@ export default function App() {
         {page === 'reviews' && <ReviewsPage data={data} reload={loadAll} logAdmin={logAdmin} toast={toast} />}
         {page === 'reports' && <ReportsPage data={data} toast={toast} />}
         {page === 'logs' && <LogsPage data={data} />}
-        {page === 'settings' && <SettingsPage profile={profile} session={session} setPage={setPage} />}
+        {page === 'settings' && <SettingsPage profile={profile} session={session} setPage={setPage} settings={data.settings} reload={loadAll} logAdmin={logAdmin} toast={toast} />}
       </main>
 
       {modal && (
