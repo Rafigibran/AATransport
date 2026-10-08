@@ -89,7 +89,7 @@ function LoginPage({ onLoggedIn }) {
   return (
     <section className="login-wrap">
       <div className="login-card">
-        <div className="brand brand-center"><span className="brand-badge">🚗</span><div><h1>A&A Transport</h1><p>Admin Panel</p></div></div>
+        <div className="brand brand-center"><span className="brand-badge"><img src="/favicon.svg" alt="A&A Transport" /></span><div><h1>A&A Transport</h1><p>Admin Panel</p></div></div>
         <form onSubmit={submit}>
           <label>Email admin<input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@contoh.com" /></label>
           <label>Password<input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" /></label>
@@ -615,7 +615,7 @@ export default function App() {
   return (
     <div className="layout">
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <div className="brand"><span className="brand-badge">🚗</span><div><h1>A&A Transport</h1><p>Admin Panel</p></div></div>
+        <div className="brand"><span className="brand-badge"><img src="/favicon.svg" alt="A&A Transport" /></span><div><h1>A&A Transport</h1><p>Admin Panel</p></div></div>
         <nav>
           {NAV.map(([key, label]) => (
             <button key={key} className={page === key ? 'active' : ''} onClick={() => { setPage(key); setSidebarOpen(false); }}>{label}</button>
