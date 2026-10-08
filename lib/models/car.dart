@@ -72,8 +72,9 @@ class Car {
     if (rawFeatures is List) {
       for (final f in rawFeatures) {
         final fac = f is Map ? f['features'] : null;
-        if (fac is Map && fac['name'] != null)
+        if (fac is Map && fac['name'] != null) {
           features.add(fac['name'].toString());
+        }
       }
     }
     final image = (map['image_url'] ?? '').toString();
