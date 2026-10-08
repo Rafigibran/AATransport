@@ -53,19 +53,22 @@ class _MyBookingScreenState extends State<MyBookingScreen>
       body: FutureBuilder<List<Booking>>(
         future: _future,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting)
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const LoadingView();
-          if (snapshot.hasError)
+          }
+          if (snapshot.hasError) {
             return ErrorView(
                 message: 'Gagal memuat booking.', onRetry: _reload);
+          }
           final all = snapshot.data ?? [];
           return TabBarView(
             controller: _tab,
             children: ['upcoming', 'completed', 'cancelled'].map((tab) {
               final list = all.where((b) => b.tabStatus == tab).toList();
-              if (list.isEmpty)
+              if (list.isEmpty) {
                 return const ErrorView(
                     message: 'Belum ada booking di kategori ini.');
+              }
               return RefreshIndicator(
                 onRefresh: () async => _reload(),
                 child: ListView.builder(

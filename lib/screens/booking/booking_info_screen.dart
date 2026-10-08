@@ -302,16 +302,19 @@ class _SavedPaymentMethodsScreenState extends State<SavedPaymentMethodsScreen> {
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _future,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting)
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const LoadingView();
-          if (snapshot.hasError)
+          }
+          if (snapshot.hasError) {
             return ErrorView(
                 message: 'Gagal memuat metode pembayaran.', onRetry: _reload);
+          }
           final items = snapshot.data ?? [];
-          if (items.isEmpty)
+          if (items.isEmpty) {
             return const ErrorView(
                 message:
                     'Belum ada metode pembayaran tersimpan.\nTekan tombol + untuk menambahkan channel SakuRupiah favoritmu.');
+          }
           return ListView.builder(
             padding: const EdgeInsets.all(20),
             itemCount: items.length,

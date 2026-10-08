@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
 import 'onboarding_screen.dart';
@@ -39,13 +40,13 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo final "Berbagi": lockup bertumpuk dari
-            // branding/logo-design/final (simbol AA + wordmark + tagline).
-            Image.asset(
-              'assets/images/logo-stacked.png',
+            // Logo final "Berbagi": lockup bertumpuk (SVG master dari
+            // branding/logo-design/final; simbol AA + wordmark + tagline).
+            SvgPicture.asset(
+              'assets/images/logo-stacked.svg',
               width: 272,
               fit: BoxFit.contain,
-              semanticLabel: 'A&A Transport',
+              semanticsLabel: 'A&A Transport',
             ),
             const SizedBox(height: 32),
             const CircularProgressIndicator(

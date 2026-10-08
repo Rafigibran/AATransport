@@ -10,8 +10,13 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.6
+  flutter_svg: ^2.0.10+1
   supabase_flutter: ^2.5.0
   url_launcher: ^6.3.0
+
+dependency_overrides:
+  # app_links 6.4.1 is incompatible with the Flutter 3.24.3 Android/Gradle template.
+  app_links: 6.3.2
 
 dev_dependencies:
   flutter_test:

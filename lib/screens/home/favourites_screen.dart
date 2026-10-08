@@ -22,16 +22,19 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
       body: FutureBuilder<List<Car>>(
         future: _future,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting)
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const LoadingView();
-          if (snapshot.hasError)
+          }
+          if (snapshot.hasError) {
             return ErrorView(
                 message: 'Gagal memuat mobil favorit.', onRetry: _reload);
+          }
           final cars = snapshot.data ?? [];
-          if (cars.isEmpty)
+          if (cars.isEmpty) {
             return const ErrorView(
                 message:
                     'Belum ada car favorit. Tekan ikon hati di detail car.');
+          }
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: ListView.builder(

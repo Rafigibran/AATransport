@@ -252,12 +252,14 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                   FutureBuilder<List<ReviewItem>>(
                     future: _reviews,
                     builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting)
+                      if (snapshot.connectionState == ConnectionState.waiting) {
                         return const LoadingView();
+                      }
                       final reviews = snapshot.data ?? [];
-                      if (reviews.isEmpty)
+                      if (reviews.isEmpty) {
                         return const Text('Belum ada review untuk car ini.',
                             style: TextStyle(color: AppColors.textGrey));
+                      }
                       return Column(
                         children: reviews
                             .map((r) => Container(

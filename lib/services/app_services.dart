@@ -84,8 +84,9 @@ class CarService {
     final cars = <Car>[];
     for (final r in rows) {
       final h = r['cars'];
-      if (h is Map<String, dynamic>)
+      if (h is Map<String, dynamic>) {
         cars.add(Car.fromMap(h, isFavourite: true));
+      }
     }
     return cars;
   }
@@ -190,8 +191,9 @@ class BookingService {
       if (data['error'] != null) throw Exception(data['error'].toString());
       return PaymentResult.fromMap(data);
     }
-    if (data is Map)
+    if (data is Map) {
       return PaymentResult.fromMap(Map<String, dynamic>.from(data));
+    }
     throw Exception('Respons pembayaran tidak valid');
   }
 
@@ -200,8 +202,9 @@ class BookingService {
     final res = await _db.functions
         .invoke('check-payment', body: {'booking_id': bookingId});
     final data = res.data;
-    if (data is Map && data['error'] != null)
+    if (data is Map && data['error'] != null) {
       throw Exception(data['error'].toString());
+    }
     if (data is Map && data['status'] != null) return data['status'].toString();
     throw Exception('Gagal mengecek status pembayaran');
   }
