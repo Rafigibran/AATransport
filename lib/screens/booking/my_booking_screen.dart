@@ -149,24 +149,60 @@ class _BookingCard extends StatelessWidget {
             if (isUpcoming) ...[
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () async {
-                    await BookingService.cancelBooking(booking.id);
-                    onChanged();
-                  },
+                  onPressed: booking.isPaid
+                      ? null
+                      : () async {
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: const Text('Batalkan booking?'),
+                              content: Text(booking.checkoutUrl != null ||
+                                      booking.paymentNo != null
+                                  ? 'Invoice pembayaran yang belum dibayar akan dibiarkan kedaluwarsa dan tidak dapat dipakai lagi. Lanjutkan pembatalan?'
+                                  : 'Booking ini akan dibatalkan. Lanjutkan?'),
+                              actions: [
+                                TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    child: const Text('Tidak')),
+                                ElevatedButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    child: const Text('Ya, batalkan')),
+                              ],
+                            ),
+                          );
+                          if (confirmed != true || !context.mounted) return;
+                          try {
+                            await BookingService.cancelBooking(booking.id);
+                            onChanged();
+                          } catch (e) {
+                            if (context.mounted) showErrorSnackBar(context, e);
+                          }
+                        },
                   style: OutlinedButton.styleFrom(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12))),
-                  child: const Text('Cancel'),
+                  child: Text(booking.isPaid ? 'Sudah Dibayar' : 'Cancel'),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (!booking.isPaid &&
-                        (booking.checkoutUrl != null ||
-                            booking.paymentNo != null)) {
-                      Navigator.push(
+                  onPressed: () async {
+                    if (booking.isPaid || booking.status == 'expired') {
+                      await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) =>
+                                  EReceiptScreen(booking: booking)));
+                      onChanged();
+                      return;
+                    }
+                    if (booking.checkoutUrl != null ||
+                        booking.paymentNo != null ||
+                        booking.qrString != null) {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => PaymentScreen(
@@ -180,12 +216,26 @@ class _BookingCard extends StatelessWidget {
                           ),
                         ),
                       );
-                    } else {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) =>
-                                  EReceiptScreen(booking: booking)));
+                      onChanged();
+                      return;
+                    }
+                    // The booking exists but its first invoice attempt failed.
+                    // Retry invoice creation instead of opening a receipt for
+                    // an unpaid booking.
+                    try {
+                      final payment = await BookingService.retryPayment(
+                          booking.id, booking.paymentMethodCode);
+                      if (!context.mounted) return;
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PaymentScreen(
+                              booking: booking, payment: payment),
+                        ),
+                      );
+                      onChanged();
+                    } catch (e) {
+                      if (context.mounted) showErrorSnackBar(context, e);
                     }
                   },
                   style:

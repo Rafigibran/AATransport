@@ -8,18 +8,61 @@ import 'customer_info_screen.dart';
 
 class BookingInfoScreen extends StatefulWidget {
   final Car car;
-  const BookingInfoScreen({super.key, required this.car});
+  final DateTime? initialPickupDate;
+  final DateTime? initialReturnDate;
+  final int? initialPassengers;
+  final int? initialUnits;
+  const BookingInfoScreen({
+    super.key,
+    required this.car,
+    this.initialPickupDate,
+    this.initialReturnDate,
+    this.initialPassengers,
+    this.initialUnits,
+  });
   @override
   State<BookingInfoScreen> createState() => _BookingInfoScreenState();
 }
 
 class _BookingInfoScreenState extends State<BookingInfoScreen> {
-  DateTime _pickupDate = DateTime.now().add(const Duration(days: 7));
-  DateTime _returnDate = DateTime.now().add(const Duration(days: 10));
-  int _passengers = 1;
-  int _units = 1;
+  late DateTime _pickupDate;
+  late DateTime _returnDate;
+  late int _passengers;
+  late int _units;
   String _serviceType = 'Dengan Sopir';
-  PaymentChannel _channel = paymentChannels.first;
+  PaymentChannel _channel =
+      paymentChannels.firstWhere((c) => c.code == 'QRISC');
+  AppSettings _settings = const AppSettings();
+
+  @override
+  void initState() {
+    super.initState();
+    _pickupDate =
+        widget.initialPickupDate ?? DateTime.now().add(const Duration(days: 7));
+    _returnDate =
+        widget.initialReturnDate ?? DateTime.now().add(const Duration(days: 10));
+    _passengers = (widget.initialPassengers ?? 1).clamp(1, widget.car.seats);
+    _units = (widget.initialUnits ?? 1).clamp(1, widget.car.totalUnits);
+    SettingsService.fetchSettings().then((settings) {
+      if (mounted) setState(() => _settings = settings);
+    });
+    ProfileService.savedPaymentMethods().then((methods) {
+      if (!mounted || methods.isEmpty) return;
+      final methodCode = methods.first['method_code']?.toString();
+      final saved = paymentChannels
+          .where((channel) => channel.code == methodCode)
+          .toList();
+      if (saved.isNotEmpty) setState(() => _channel = saved.first);
+    });
+  }
+
+  int _estimateTotal(int rawDays) {
+    final days = rawDays < 1 ? 1 : rawDays;
+    final subtotal = widget.car.price * days * _units;
+    final tax = (subtotal * _settings.taxPercent / 100).round();
+    final fee = (subtotal * _settings.feePercent / 100).round();
+    return subtotal + tax + fee;
+  }
 
   Future<void> _pickDates() async {
     final picked = await showDateRangePicker(
@@ -65,6 +108,8 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
                             Navigator.pop(context);
                           },
                           title: Text(c.name),
+                          subtitle: Text(
+                              '${formatRupiah(c.minAmount)} - ${formatRupiah(c.maxAmount)}'),
                           secondary: const Icon(Icons.payments_outlined,
                               color: AppColors.primary),
                         ))
@@ -104,11 +149,13 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
             Row(children: [
               Expanded(
                   child: _stepper('Penyewa', _passengers,
-                      (v) => setState(() => _passengers = v))),
+                      (v) => setState(() => _passengers = v),
+                      maxValue: widget.car.seats)),
               const SizedBox(width: 12),
               Expanded(
                   child: _stepper(
-                      'Mobil', _units, (v) => setState(() => _units = v))),
+                      'Mobil', _units, (v) => setState(() => _units = v),
+                      maxValue: widget.car.totalUnits)),
             ]),
             const SizedBox(height: 18),
             InputDecorator(
@@ -148,16 +195,39 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
               decoration: BoxDecoration(
                   color: Colors.white, borderRadius: BorderRadius.circular(16)),
               child: Text(
-                  'Perkiraan total: ${formatRupiah(widget.car.price * (days < 1 ? 1 : days) * _units)} untuk ${days < 1 ? 1 : days} hari x $_units mobil (sebelum pajak 10%)',
+                  'Perkiraan total: ${formatRupiah(_estimateTotal(days))} untuk ${days < 1 ? 1 : days} hari x $_units mobil'
+                  '${_settings.taxPercent > 0 || _settings.feePercent > 0 ? ' (termasuk pajak/fee sesuai pengaturan admin)' : ' (tanpa pajak dan fee)'}',
                   style: const TextStyle(color: AppColors.textGrey)),
             ),
             const SizedBox(height: 24),
             PrimaryButton(
               text: 'Continue',
-              onPressed: () {
+              onPressed: () async {
                 if (days < 1) {
                   showErrorSnackBar(
-                      context, 'Tanggal check-out harus setelah check-in');
+                      context, 'Tanggal kembali harus setelah tanggal ambil');
+                  return;
+                }
+                if (_passengers > widget.car.seats) {
+                  showErrorSnackBar(context,
+                      'Jumlah penumpang melebihi kapasitas ${widget.car.seats} kursi');
+                  return;
+                }
+                if (_units > widget.car.totalUnits) {
+                  showErrorSnackBar(context,
+                      'Jumlah unit melebihi armada yang tersedia (${widget.car.totalUnits} unit)');
+                  return;
+                }
+                final available = await BookingService.availableUnits(
+                  carId: widget.car.id,
+                  pickupDate: _pickupDate,
+                  returnDate: _returnDate,
+                  totalUnits: widget.car.totalUnits,
+                );
+                if (!context.mounted) return;
+                if (_units > available) {
+                  showErrorSnackBar(context,
+                      'Mobil tidak tersedia pada tanggal tersebut. Sisa unit tersedia: $available');
                   return;
                 }
                 final draft = BookingDraft(
@@ -168,6 +238,7 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
                   units: _units,
                   serviceType: _serviceType,
                   paymentMethodCode: _channel.code,
+                  settings: _settings,
                 );
                 Navigator.push(
                     context,
@@ -207,7 +278,8 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
     );
   }
 
-  Widget _stepper(String label, int value, ValueChanged<int> onChanged) {
+  Widget _stepper(String label, int value, ValueChanged<int> onChanged,
+      {int? maxValue}) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
       const SizedBox(height: 8),
@@ -226,9 +298,13 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
               style:
                   const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           IconButton(
-              onPressed: () => onChanged(value + 1),
-              icon: const Icon(Icons.add_circle_outline,
-                  color: AppColors.primary)),
+              onPressed: maxValue == null || value < maxValue
+                  ? () => onChanged(value + 1)
+                  : null,
+              icon: Icon(Icons.add_circle_outline,
+                  color: maxValue == null || value < maxValue
+                      ? AppColors.primary
+                      : AppColors.textGrey)),
         ]),
       ),
     ]);
@@ -333,9 +409,13 @@ class _SavedPaymentMethodsScreenState extends State<SavedPaymentMethodsScreen> {
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
                     onPressed: () async {
-                      await ProfileService.deleteSavedPaymentMethod(
-                          item['id'].toString());
-                      _reload();
+                      try {
+                        await ProfileService.deleteSavedPaymentMethod(
+                            item['id'].toString());
+                        _reload();
+                      } catch (e) {
+                        if (context.mounted) showErrorSnackBar(context, e);
+                      }
                     },
                   ),
                 ),
