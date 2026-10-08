@@ -39,29 +39,14 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.directions_car,
-                size: 64, color: AppColors.primary),
-            const SizedBox(height: 12),
-            RichText(
-              text: const TextSpan(children: [
-                TextSpan(
-                    text: 'A&A',
-                    style: TextStyle(
-                        fontSize: 42,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary)),
-                TextSpan(
-                    text: ' Transport',
-                    style: TextStyle(
-                        fontSize: 42,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textDark)),
-              ]),
+            // Logo final "Berbagi": lockup bertumpuk dari
+            // branding/logo-design/final (simbol AA + wordmark + tagline).
+            Image.asset(
+              'assets/images/logo-stacked.png',
+              width: 272,
+              fit: BoxFit.contain,
+              semanticLabel: 'A&A Transport',
             ),
-            const SizedBox(height: 6),
-            const Text('Travel in comfort',
-                style:
-                    TextStyle(color: AppColors.textGrey, letterSpacing: 1.2)),
             const SizedBox(height: 32),
             const CircularProgressIndicator(
                 color: AppColors.primary, strokeWidth: 2.5),
