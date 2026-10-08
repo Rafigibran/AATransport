@@ -75,10 +75,14 @@ function LoginPage({ onLoggedIn }) {
     setError('');
     const { data, error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (err) return setError(err.message);
-    const { data: prof } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
-    if (!prof || prof.role !== 'admin') {
+    const { data: prof } = await supabase.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
+    if (!prof) {
       await supabase.auth.signOut();
-      return setError('Akun ini bukan admin. Jadikan role admin dulu lewat SQL Supabase.');
+      return setError('Profil akun ini belum ada di tabel profiles. Jalankan SQL file 202610080003_fix_admin.sql di Supabase SQL Editor, lalu login lagi.');
+    }
+    if (prof.role !== 'admin') {
+      await supabase.auth.signOut();
+      return setError(`Akun ${prof.email || email} masih berstatus role "${prof.role}". Jalankan SQL file 202610080003_fix_admin.sql untuk menjadikannya admin, lalu login lagi.`);
     }
     await onLoggedIn(data.session);
   };

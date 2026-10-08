@@ -80,3 +80,13 @@ supabase functions deploy check-payment
 - Panel ini hanya memakai publishable key + login admin; semua akses tulis
   dibatasi Row Level Security (`public.is_admin()`).
 - Berikan role admin hanya ke pengelola tepercaya.
+
+## Troubleshooting: login ditolak padahal sudah menjalankan SQL
+
+Penyebab paling umum: SQL `update profiles` dijalankan **sebelum** akun
+terdaftar (0 baris berubah), baris profil belum ada, atau huruf besar/kecil
+email berbeda. Jalankan file `supabase/migrations/202610080003_fix_admin.sql`
+di SQL Editor: file itu menampilkan daftar profil, membuat baris profil dari
+`auth.users` bila belum ada, dan mengatur `role = 'admin'` tanpa peka huruf.
+Pastikan juga project Supabase yang dibuka benar: `jbowxiolzbbacfyatvoh`.
+Setelah itu logout/login ulang di admin panel.
