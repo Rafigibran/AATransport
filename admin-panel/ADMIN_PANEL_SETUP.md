@@ -23,6 +23,8 @@ Di Supabase Dashboard → **SQL Editor**, jalankan berurutan:
 
 1. `supabase/migrations/202610080001_init_aatransport.sql` (kalau belum)
 2. `supabase/migrations/202610080002_admin_panel.sql` (menambah role admin, policies kelola data, tabel admin_logs)
+3. `supabase/migrations/202610080005_app_settings.sql` (pengaturan pajak/fee yang dapat diubah dari Pengaturan)
+4. `supabase/migrations/202610080006_security_booking_integrity.sql` (perhitungan booking server-side, kapasitas armada, dan penguncian status pembayaran)
 
 ## 2. Buat akun admin pertama
 
@@ -64,7 +66,16 @@ Deploy statis (pilih salah satu):
   dioverride dengan env `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY`
   (publishable key aman untuk client karena data dilindungi RLS + role admin).
 
-## 4. Cek status pembayaran dari panel
+## 4. Pajak dan biaya layanan
+
+Di menu **Pengaturan**, admin dapat mengubah:
+
+- Pajak (%)
+- Biaya layanan / fee (%)
+
+Keduanya default **0%**, berlaku untuk booking baru, dan disimpan sebagai snapshot di setiap booking agar e-receipt lama tidak berubah. Aplikasi Flutter membaca nilai yang sama dari tabel `app_settings`.
+
+## 5. Cek status pembayaran dari panel
 
 Tombol **Cek Bayar** memanggil Edge Function `check-payment` yang sudah
 diperbarui supaya admin bisa mengecek booking siapa pun (user biasa hanya

@@ -35,6 +35,47 @@ export async function createInvoiceSignature(apiId: string, method: string, merc
   return await hmacSha256Hex(apiKey, `${apiId}${method}${merchantRef}${amount}`);
 }
 
+/** SakuRupiah channels known to the A&A Transport app and their amount bounds (IDR). */
+export const sakurupiahChannels: Record<string, { name: string; min: number; max: number }> = {
+  QRISMU: { name: 'QRISMU', min: 500, max: 5_000_000 },
+  QRIS2: { name: 'QRIS2', min: 100, max: 10_000_000 },
+  QRIS: { name: 'QRIS', min: 500, max: 2_000_000 },
+  QRISC: { name: 'QRIS (semua e-wallet)', min: 200, max: 20_000_000 },
+  ShopeePay: { name: 'ShopeePay', min: 1_000, max: 2_000_000 },
+  GOPAY: { name: 'GoPay', min: 500, max: 5_000_000 },
+  BNCVA: { name: 'BNC Virtual Account', min: 10_000, max: 10_000_000 },
+  SINARMAS: { name: 'Sinarmas Virtual Account', min: 10_000, max: 10_000_000 },
+  BRIVA: { name: 'BRI Virtual Account', min: 10_000, max: 10_000_000 },
+  BCAVA: { name: 'BCA Virtual Account', min: 10_000, max: 15_000_000 },
+  DANAMON: { name: 'Danamon Virtual Account', min: 10_000, max: 15_000_000 },
+  MUAMALAT: { name: 'Muamalat Virtual Account', min: 10_000, max: 15_000_000 },
+  BSIVA: { name: 'BSI Virtual Account', min: 10_000, max: 20_000_000 },
+  OCBC: { name: 'OCBC Virtual Account', min: 10_000, max: 10_000_000 },
+  BAGVA: { name: 'BAG Virtual Account', min: 10_000, max: 15_000_000 },
+  ALFAMART: { name: 'Alfamart', min: 10_000, max: 5_000_000 },
+  INDOMARET: { name: 'Indomaret', min: 10_000, max: 2_500_000 },
+};
+
+export function formatIdr(value: number): string {
+  return `Rp${Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
+}
+
+/** Constant-time string comparison for callback signatures. */
+export function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+/** Whether a non-terminal payment update may overwrite the current status. */
+export function shouldApplyPaymentStatus(current: string | null | undefined, next: string): boolean {
+  if (current === 'berhasil') return false; // successful payment is terminal
+  if (next === 'berhasil') return true;
+  if (current === 'expired') return false;
+  return next === 'pending' || next === 'expired';
+}
+
 /** Normalize SakuRupiah responses: `data` can be an array or an object. */
 export function firstData(payload: any): Record<string, any> {
   if (!payload) return {};

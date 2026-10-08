@@ -35,6 +35,8 @@ class AppTextField extends StatelessWidget {
   final bool obscure;
   final TextEditingController? controller;
   final Widget? suffix;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
   const AppTextField(
       {super.key,
       required this.hint,
@@ -42,7 +44,9 @@ class AppTextField extends StatelessWidget {
       this.icon,
       this.obscure = false,
       this.controller,
-      this.suffix});
+      this.suffix,
+      this.onChanged,
+      this.onSubmitted});
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +62,8 @@ class AppTextField extends StatelessWidget {
         TextField(
           controller: controller,
           obscureText: obscure,
+          onChanged: onChanged,
+          onSubmitted: onSubmitted,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(color: AppColors.textGrey),

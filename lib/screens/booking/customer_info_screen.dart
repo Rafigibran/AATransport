@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/car.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/validators.dart';
 import '../../widgets/common_widgets.dart';
 import 'review_summary_screen.dart';
 
@@ -92,10 +93,10 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen> {
                         ? _otherName.text.trim()
                         : _name.text.trim();
                 if (customerName.isEmpty ||
-                    _email.text.trim().isEmpty ||
-                    _phone.text.trim().isEmpty) {
+                    !isValidEmail(_email.text) ||
+                    !isValidIndonesianPhone(_phone.text)) {
                   showErrorSnackBar(context,
-                      'Nama, email, dan nomor handphone penyewa wajib diisi');
+                      'Nama wajib diisi serta email dan nomor handphone Indonesia harus valid');
                   return;
                 }
                 Navigator.push(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/validators.dart';
 import '../../widgets/common_widgets.dart';
 import '../home/main_screen.dart';
 import 'login_screen.dart';
@@ -31,10 +32,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _register() async {
     if (_name.text.trim().isEmpty ||
-        _email.text.trim().isEmpty ||
+        !isValidEmail(_email.text) ||
+        (_phone.text.trim().isNotEmpty &&
+            !isValidIndonesianPhone(_phone.text)) ||
         _password.text.length < 6) {
-      showErrorSnackBar(
-          context, 'Nama & email wajib diisi, password minimal 6 karakter');
+      showErrorSnackBar(context,
+          'Nama wajib diisi, email/nomor handphone harus valid, dan password minimal 6 karakter');
       return;
     }
     if (!_agree) {
@@ -125,9 +128,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   value: _agree,
                   onChanged: (v) => setState(() => _agree = v ?? false),
                   activeColor: AppColors.primary),
-              const Expanded(
-                  child: Text('Saya setuju dengan Syarat dan Kebijakan Privasi',
-                      style: TextStyle(fontSize: 13))),
+              Expanded(
+                  child: InkWell(
+                      onTap: () => showDialog(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: const Text('Syarat dan Kebijakan Privasi'),
+                              content: const SingleChildScrollView(
+                                child: Text(
+                                    'Dengan menggunakan A&A Transport, pengguna menyetujui pemrosesan data akun, data penyewa, dan data booking untuk keperluan reservasi serta pembayaran melalui Supabase dan SakuRupiah. Nomor kartu dan kredensial pembayaran tidak disimpan oleh aplikasi. Booking dianggap terkonfirmasi setelah pembayaran berstatus berhasil. Ketersediaan mobil mengikuti kapasitas armada dan masa sewa yang tercatat di sistem.'),
+                              ),
+                              actions: [
+                                TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('Tutup')),
+                              ],
+                            ),
+                          ),
+                      child: const Text(
+                          'Saya setuju dengan Syarat dan Kebijakan Privasi',
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.primary,
+                              decoration: TextDecoration.underline)))),
             ]),
             const SizedBox(height: 14),
             PrimaryButton(

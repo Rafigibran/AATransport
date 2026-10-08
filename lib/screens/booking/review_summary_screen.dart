@@ -25,6 +25,15 @@ class _ReviewSummaryScreenState extends State<ReviewSummaryScreen> {
   bool _paying = false;
 
   Future<void> _pay() async {
+    final channel = paymentChannels.firstWhere(
+        (c) => c.code == widget.draft.paymentMethodCode,
+        orElse: () => paymentChannels.first);
+    if (!channel.supportsAmount(widget.draft.total)) {
+      showErrorSnackBar(
+          context,
+          'Channel ${channel.name} hanya mendukung ${formatRupiah(channel.minAmount)} - ${formatRupiah(channel.maxAmount)}. Kembali dan pilih metode pembayaran lain.');
+      return;
+    }
     setState(() => _paying = true);
     try {
       final booking = await BookingService.createBooking(widget.draft,
@@ -83,7 +92,14 @@ class _ReviewSummaryScreenState extends State<ReviewSummaryScreen> {
             const SizedBox(height: 12),
             _row('Harga sewa per hari', formatRupiah(d.car.price)),
             _row('Subtotal', formatRupiah(d.subtotal)),
-            _row('Pajak & biaya layanan (10%)', formatRupiah(d.tax)),
+            if (d.tax > 0)
+              _row('Pajak (${_percentLabel(d.settings.taxPercent)})',
+                  formatRupiah(d.tax)),
+            if (d.fee > 0)
+              _row('Biaya layanan (${_percentLabel(d.settings.feePercent)})',
+                  formatRupiah(d.fee)),
+            if (d.tax == 0 && d.fee == 0)
+              _row('Pajak & biaya layanan', formatRupiah(0)),
             const Divider(),
             _row('Total Amount', formatRupiah(d.total), bold: true),
             _row('Payment Method', '$channelName (SakuRupiah)'),
@@ -98,6 +114,9 @@ class _ReviewSummaryScreenState extends State<ReviewSummaryScreen> {
       ),
     );
   }
+
+  String _percentLabel(double value) =>
+      '${value.toStringAsFixed(value % 1 == 0 ? 0 : 2)}%';
 
   Widget _row(String k, String v, {bool bold = false}) {
     return Padding(

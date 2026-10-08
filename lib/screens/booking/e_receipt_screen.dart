@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../models/car.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/format.dart';
@@ -12,11 +13,7 @@ class EReceiptScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: const Text('E-Receipt'),
-          leading: const BackButton(),
-          actions: [
-            IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert))
-          ]),
+          title: const Text('E-Receipt'), leading: const BackButton()),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -42,7 +39,8 @@ class EReceiptScreen extends StatelessWidget {
                   color: Colors.white, borderRadius: BorderRadius.circular(20)),
               child: Column(children: [
                 _row('Subtotal', formatRupiah(booking.subtotal)),
-                _row('Pajak & biaya layanan', formatRupiah(booking.tax)),
+                _row('Pajak', formatRupiah(booking.tax)),
+                _row('Biaya layanan', formatRupiah(booking.fee)),
                 const Divider(),
                 _row('Total', formatRupiah(booking.total), bold: true),
                 _row('Payment Method',
@@ -75,14 +73,39 @@ class EReceiptScreen extends StatelessWidget {
               const SizedBox(width: 14),
               Expanded(
                   child: PrimaryButton(
-                      text: 'Download',
-                      onPressed: () => showErrorSnackBar(
-                          context, 'E-receipt ditampilkan di halaman ini'))),
+                      text: 'Salin E-Receipt',
+                      onPressed: () async {
+                        await Clipboard.setData(
+                            ClipboardData(text: _receiptText()));
+                        if (context.mounted) {
+                          showErrorSnackBar(
+                              context, 'E-receipt disalin ke clipboard');
+                        }
+                      })),
             ]),
           ],
         ),
       ),
     );
+  }
+
+  String _receiptText() {
+    return [
+      'E-Receipt A&A Transport',
+      'Booking ID: ${booking.id.substring(0, 8).toUpperCase()}',
+      'Mobil: ${booking.car.name}',
+      'Penyewa: ${booking.customerName}',
+      'Tanggal Ambil: ${formatDateId(booking.pickupDate)}',
+      'Tanggal Kembali: ${formatDateId(booking.returnDate)}',
+      'Durasi: ${booking.days} hari',
+      'Subtotal: ${formatRupiah(booking.subtotal)}',
+      'Pajak: ${formatRupiah(booking.tax)}',
+      'Biaya layanan: ${formatRupiah(booking.fee)}',
+      'Total: ${formatRupiah(booking.total)}',
+      'Metode Pembayaran: ${booking.paymentMethodCode ?? '-'} (SakuRupiah)',
+      'Status Pembayaran: ${booking.paymentStatus}',
+      if (booking.trxId != null) 'ID Transaksi: ${booking.trxId}',
+    ].join('\n');
   }
 
   Widget _row(String k, String v, {bool bold = false}) => Padding(
