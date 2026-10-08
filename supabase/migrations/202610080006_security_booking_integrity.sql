@@ -79,7 +79,8 @@ drop policy if exists "reviews_insert_own" on public.reviews;
 create policy "reviews_insert_own" on public.reviews
   for insert with check (
     auth.uid() = user_id
-    and (booking_id is null or public.can_review_booking(booking_id, car_id))
+    and booking_id is not null
+    and public.can_review_booking(booking_id, car_id)
   );
 
 -- ---------- direct client booking writes are deliberately narrow ----------
