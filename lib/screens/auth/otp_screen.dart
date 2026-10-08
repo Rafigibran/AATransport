@@ -24,8 +24,9 @@ class _OtpScreenState extends State<OtpScreen> {
   Future<void> _resend() async {
     try {
       await AuthService.sendPasswordReset(widget.email);
-      if (mounted)
+      if (mounted) {
         showErrorSnackBar(context, 'Kode OTP baru sudah dikirim ke email kamu');
+      }
     } catch (e) {
       if (mounted) showErrorSnackBar(context, e);
     }
