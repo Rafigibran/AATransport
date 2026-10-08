@@ -127,18 +127,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 FutureBuilder<List<Car>>(
                   future: _future,
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting)
+                    if (snapshot.connectionState == ConnectionState.waiting) {
                       return const LoadingView();
-                    if (snapshot.hasError)
+                    }
+                    if (snapshot.hasError) {
                       return ErrorView(
                           message:
                               'Gagal memuat car. Pastikan tabel Supabase sudah dibuat (lihat BACKEND_SETUP.md).',
                           onRetry: _reload);
+                    }
                     final cars = snapshot.data ?? [];
-                    if (cars.isEmpty)
+                    if (cars.isEmpty) {
                       return const ErrorView(
                           message:
                               'Belum ada car. Tambahkan data car di Supabase.');
+                    }
                     final popular = cars.take(3).toList();
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
