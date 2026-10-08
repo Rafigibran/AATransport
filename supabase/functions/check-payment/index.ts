@@ -13,7 +13,16 @@ Deno.serve(async (req) => {
     const userClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
       global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
     });
-    const { data: booking, error } = await userClient
+    const admin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const { data: authData } = await userClient.auth.getUser();
+    let isAdmin = false;
+    if (authData.user) {
+      const { data: profile } = await admin.from('profiles').select('role').eq('id', authData.user.id).maybeSingle();
+      isAdmin = profile?.role === 'admin';
+    }
+    // Admins may check any booking; regular users only their own (RLS).
+    const bookingClient = isAdmin ? admin : userClient;
+    const { data: booking, error } = await bookingClient
       .from('bookings')
       .select('id, sakurupiah_trx_id, payment_status, status')
       .eq('id', booking_id)
@@ -38,7 +47,6 @@ Deno.serve(async (req) => {
     const status: string | undefined = firstData(payload).status ?? payload?.data?.status;
     if (!status) return jsonResponse({ error: payload?.message ?? 'Gagal cek status', detail: payload }, 502);
 
-    const admin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     await admin.from('payments').update({ status }).eq('trx_id', booking.sakurupiah_trx_id);
     if (status === 'berhasil') {
       await admin.from('bookings').update({ payment_status: 'berhasil', status: 'confirmed' }).eq('id', booking.id);

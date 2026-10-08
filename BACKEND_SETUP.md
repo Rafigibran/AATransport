@@ -20,7 +20,9 @@ flutter run --dart-define=SUPABASE_URL=https://xxxx.supabase.co --dart-define=SU
 
 1. Buka Supabase Dashboard → **SQL Editor**
 2. Copy seluruh isi file `supabase/migrations/202610080001_init_aatransport.sql`
-3. **Run**. File ini membuat tabel `profiles`, `cars`, `car_photos`,
+3. **Run**. Setelah itu jalankan juga `supabase/migrations/202610080002_admin_panel.sql`
+   untuk mengaktifkan website admin panel (role admin, policies kelola data,
+   log admin — lihat `admin-panel/ADMIN_PANEL_SETUP.md`). File ini membuat tabel `profiles`, `cars`, `car_photos`,
    `features`, `car_features`, `favourites`, `bookings`, `payments`,
    `reviews`, `saved_payment_methods`, lengkap dengan RLS, trigger profil
    otomatis saat user register, bucket Storage `car-images`, dan seed
