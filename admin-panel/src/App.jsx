@@ -21,12 +21,12 @@ const bookingBadge = (s) =>
      pending_payment: <Badge kind="orange">Menunggu Pembayaran</Badge> })[s] || <Badge>{s}</Badge>;
 
 const NAV = [
-  ['dashboard', '📊 Dashboard', 'Ringkasan bisnis A&A Transport'],
+  ['dashboard', '📊 Dashboard', 'Ringkasan bisnis Haluna Travel'],
   ['cars', '🚘 Mobil', 'Kelola armada, harga, foto, dan fitur mobil'],
   ['bookings', '📅 Booking', 'Kelola rental pelanggan dan status perjalanan'],
   ['calendar', '🗓️ Kalender Rental', 'Jadwal pengambilan mobil berdasarkan tanggal'],
   ['payments', '💳 Pembayaran', 'Transaksi SakuRupiah dan pendapatan'],
-  ['customers', '👥 Pelanggan', 'Akun pelanggan aplikasi A&A Transport'],
+  ['customers', '👥 Pelanggan', 'Akun pelanggan aplikasi Haluna Travel'],
   ['reviews', '⭐ Review', 'Ulasan pelanggan untuk setiap mobil'],
   ['reports', '📈 Laporan', 'Ekspor CSV dan ringkasan performa'],
   ['logs', '🧾 Log Admin', 'Riwayat aktivitas admin panel'],
@@ -89,7 +89,7 @@ function LoginPage({ onLoggedIn }) {
   return (
     <section className="login-wrap">
       <div className="login-card">
-        <div className="brand brand-center"><span className="brand-badge"><img src="/favicon.svg" alt="A&A Transport" /></span><div><h1>A&A Transport</h1><p>Admin Panel</p></div></div>
+        <div className="brand brand-center"><span className="brand-badge"><img src="/logo-haluna.png" alt="Haluna Travel" /></span><div><h1>Haluna Travel</h1><p>Admin Panel</p></div></div>
         <form onSubmit={submit}>
           <label>Email admin<input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@contoh.com" /></label>
           <label>Password<input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" /></label>
@@ -530,7 +530,7 @@ function SettingsPage({ profile, session, setPage, settings, reload, logAdmin, t
         <p className="hint">Keamanan diatur oleh Supabase RLS. Hanya akun <b>profiles.role = 'admin'</b> yang bisa masuk panel ini.</p></div>
       <div className="card"><h3>Jadikan Akun Admin</h3><p>Jalankan SQL ini di Supabase SQL Editor setelah akun terdaftar:</p>
         <pre style={{ whiteSpace: 'pre-wrap', background: '#0f172a', color: '#fff', padding: 14, borderRadius: 12 }}>update public.profiles{'\n'}set role = 'admin'{'\n'}where email = 'email-kamu@contoh.com';</pre>
-        <p className="hint">Berikan role admin hanya ke pengelola A&A Transport.</p></div>
+        <p className="hint">Berikan role admin hanya ke pengelola Haluna Travel.</p></div>
       <div className="card"><h3>Pembayaran SakuRupiah</h3><p>Channel aktif: QRIS, QRISC, BCA VA, BRI VA, BSI VA, BNC VA, Danamon VA, GoPay, ShopeePay, Alfamart, Indomaret.</p>
         <p className="hint">API ID/API KEY bersifat rahasia dan diatur sebagai Supabase Edge Function secrets, bukan di panel ini.</p>
         <button className="btn" onClick={() => setPage('payments')}>Lihat Pembayaran</button></div>
@@ -615,7 +615,7 @@ export default function App() {
   return (
     <div className="layout">
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <div className="brand"><span className="brand-badge"><img src="/favicon.svg" alt="A&A Transport" /></span><div><h1>A&A Transport</h1><p>Admin Panel</p></div></div>
+        <div className="brand"><span className="brand-badge"><img src="/logo-haluna.png" alt="Haluna Travel" /></span><div><h1>Haluna Travel</h1><p>Admin Panel</p></div></div>
         <nav>
           {NAV.map(([key, label]) => (
             <button key={key} className={page === key ? 'active' : ''} onClick={() => { setPage(key); setSidebarOpen(false); }}>{label}</button>

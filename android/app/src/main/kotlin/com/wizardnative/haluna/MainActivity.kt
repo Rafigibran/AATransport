@@ -1,4 +1,4 @@
-package com.wizardnative.aatransport
+package com.wizardnative.haluna
 
 import io.flutter.embedding.android.FlutterActivity
 

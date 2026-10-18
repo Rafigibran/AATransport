@@ -1,3 +1,5 @@
+import '../l10n/app_strings.dart';
+
 class Car {
   final String id;
   final String name;
@@ -243,7 +245,7 @@ class ReviewItem {
     final created = DateTime.tryParse(map['created_at']?.toString() ?? '');
     return ReviewItem(
       id: map['id'].toString(),
-      name: (profile?['full_name'] ?? 'Pengguna A&A Transport').toString(),
+      name: (profile?['full_name'] ?? tr('pf_guest')).toString(),
       avatar: (profile?['avatar_url'] ?? '').toString(),
       rating: (map['rating'] as num?)?.toDouble() ?? 0,
       comment: (map['comment'] ?? '').toString(),
@@ -304,62 +306,4 @@ class BookingDraft {
   int get tax => (subtotal * settings.taxPercent / 100).round();
   int get fee => (subtotal * settings.feePercent / 100).round();
   int get total => subtotal + tax + fee;
-}
-
-class PaymentChannel {
-  final String code;
-  final String name;
-  final int minAmount;
-  final int maxAmount;
-  const PaymentChannel(this.code, this.name, this.minAmount, this.maxAmount);
-
-  bool supportsAmount(int amount) => amount >= minAmount && amount <= maxAmount;
-}
-
-const paymentChannels = <PaymentChannel>[
-  PaymentChannel('QRIS', 'QRIS', 500, 2000000),
-  PaymentChannel('QRISC', 'QRIS (semua e-wallet)', 200, 20000000),
-  PaymentChannel('QRISMU', 'QRISMU', 500, 5000000),
-  PaymentChannel('QRIS2', 'QRIS2', 100, 10000000),
-  PaymentChannel('BCAVA', 'BCA Virtual Account', 10000, 15000000),
-  PaymentChannel('BRIVA', 'BRI Virtual Account', 10000, 10000000),
-  PaymentChannel('BSIVA', 'BSI Virtual Account', 10000, 20000000),
-  PaymentChannel('BNCVA', 'BNC Virtual Account', 10000, 10000000),
-  PaymentChannel('SINARMAS', 'Sinarmas Virtual Account', 10000, 10000000),
-  PaymentChannel('MUAMALAT', 'Muamalat Virtual Account', 10000, 15000000),
-  PaymentChannel('OCBC', 'OCBC Virtual Account', 10000, 10000000),
-  PaymentChannel('BAGVA', 'BAG Virtual Account', 10000, 15000000),
-  PaymentChannel('DANAMON', 'Danamon Virtual Account', 10000, 15000000),
-  PaymentChannel('GOPAY', 'GoPay', 500, 5000000),
-  PaymentChannel('ShopeePay', 'ShopeePay', 1000, 2000000),
-  PaymentChannel('ALFAMART', 'Alfamart', 10000, 5000000),
-  PaymentChannel('INDOMARET', 'Indomaret', 10000, 2500000),
-];
-
-class PaymentResult {
-  final String? trxId;
-  final String? merchantRef;
-  final String? checkoutUrl;
-  final String? paymentNo;
-  final String? qrString;
-  final String? methodCode;
-
-  const PaymentResult(
-      {this.trxId,
-      this.merchantRef,
-      this.checkoutUrl,
-      this.paymentNo,
-      this.qrString,
-      this.methodCode});
-
-  factory PaymentResult.fromMap(Map<String, dynamic> map) {
-    return PaymentResult(
-      trxId: map['trx_id']?.toString(),
-      merchantRef: map['merchant_ref']?.toString(),
-      checkoutUrl: map['checkout_url']?.toString(),
-      paymentNo: map['payment_no']?.toString(),
-      qrString: map['qr_string']?.toString(),
-      methodCode: map['method_code']?.toString(),
-    );
-  }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../models/car.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/format.dart';
+import '../../l10n/app_strings.dart';
 import '../../widgets/common_widgets.dart';
 
 class EReceiptScreen extends StatelessWidget {
@@ -24,12 +25,12 @@ class EReceiptScreen extends StatelessWidget {
               decoration: BoxDecoration(
                   color: Colors.white, borderRadius: BorderRadius.circular(20)),
               child: Column(children: [
-                _row('Booking ID', booking.id.substring(0, 8).toUpperCase()),
-                _row('Tanggal Ambil', formatDateId(booking.pickupDate)),
-                _row('Tanggal Kembali', formatDateId(booking.returnDate)),
-                _row('Penyewa', booking.customerName),
-                _row('Mobil', '${booking.units} x ${booking.serviceType}'),
-                _row('Durasi', '${booking.days} hari'),
+                _row(tr('er_id'), booking.id.substring(0, 8).toUpperCase()),
+                _row(tr('er_pickup'), formatDate(booking.pickupDate)),
+                _row(tr('er_return'), formatDate(booking.returnDate)),
+                _row(tr('er_renter'), booking.customerName),
+                _row(tr('er_cars'), '${booking.units} x ${booking.serviceType}'),
+                _row(tr('er_duration'), tr('er_days', {'n': '${booking.days}'})),
               ]),
             ),
             const SizedBox(height: 16),
@@ -38,14 +39,13 @@ class EReceiptScreen extends StatelessWidget {
               decoration: BoxDecoration(
                   color: Colors.white, borderRadius: BorderRadius.circular(20)),
               child: Column(children: [
-                _row('Subtotal', formatRupiah(booking.subtotal)),
-                _row('Pajak', formatRupiah(booking.tax)),
-                _row('Biaya layanan', formatRupiah(booking.fee)),
+                _row(tr('er_subtotal'), formatMoney(booking.subtotal)),
+                _row(tr('er_tax'), formatMoney(booking.tax)),
+                _row(tr('er_fee'), formatMoney(booking.fee)),
                 const Divider(),
-                _row('Total', formatRupiah(booking.total), bold: true),
-                _row('Payment Method',
-                    '${booking.paymentMethodCode ?? '-'} (SakuRupiah)'),
-                _row('Payment Status', booking.paymentStatus),
+                _row(tr('er_total'), formatMoney(booking.total), bold: true),
+                _row(tr('er_method'), tr('er_method_wa')),
+                _row(tr('er_status'), booking.paymentStatus),
                 if (booking.trxId != null) _row('ID Transaksi', booking.trxId!),
               ]),
             ),
@@ -67,19 +67,19 @@ class EReceiptScreen extends StatelessWidget {
             Row(children: [
               Expanded(
                   child: PrimaryButton(
-                      text: 'Back',
+                      text: tr('common_back'),
                       isOutline: true,
                       onPressed: () => Navigator.pop(context))),
               const SizedBox(width: 14),
               Expanded(
                   child: PrimaryButton(
-                      text: 'Salin E-Receipt',
+                      text: tr('er_copy'),
                       onPressed: () async {
                         await Clipboard.setData(
                             ClipboardData(text: _receiptText()));
                         if (context.mounted) {
                           showErrorSnackBar(
-                              context, 'E-receipt disalin ke clipboard');
+                              context, tr('er_copied'));
                         }
                       })),
             ]),
@@ -91,19 +91,19 @@ class EReceiptScreen extends StatelessWidget {
 
   String _receiptText() {
     return [
-      'E-Receipt A&A Transport',
-      'Booking ID: ${booking.id.substring(0, 8).toUpperCase()}',
-      'Mobil: ${booking.car.name}',
-      'Penyewa: ${booking.customerName}',
-      'Tanggal Ambil: ${formatDateId(booking.pickupDate)}',
-      'Tanggal Kembali: ${formatDateId(booking.returnDate)}',
-      'Durasi: ${booking.days} hari',
-      'Subtotal: ${formatRupiah(booking.subtotal)}',
-      'Pajak: ${formatRupiah(booking.tax)}',
-      'Biaya layanan: ${formatRupiah(booking.fee)}',
-      'Total: ${formatRupiah(booking.total)}',
-      'Metode Pembayaran: ${booking.paymentMethodCode ?? '-'} (SakuRupiah)',
-      'Status Pembayaran: ${booking.paymentStatus}',
+      tr('er_header'),
+      '${tr('er_id')}: ${booking.id.substring(0, 8).toUpperCase()}',
+      '${tr('wa_car')}: ${booking.car.name}',
+      '${tr('er_renter')}: ${booking.customerName}',
+      '${tr('er_pickup')}: ${formatDate(booking.pickupDate)}',
+      '${tr('er_return')}: ${formatDate(booking.returnDate)}',
+      '${tr('er_duration')}: ${tr('er_days', {'n': '${booking.days}'})}',
+      '${tr('er_subtotal')}: ${formatMoney(booking.subtotal)}',
+      '${tr('er_tax')}: ${formatMoney(booking.tax)}',
+      '${tr('er_fee')}: ${formatMoney(booking.fee)}',
+      '${tr('er_total')}: ${formatMoney(booking.total)}',
+      '${tr('er_method')}: ${tr('er_method_wa')}',
+      '${tr('er_status')}: ${booking.paymentStatus}',
       if (booking.trxId != null) 'ID Transaksi: ${booking.trxId}',
     ].join('\n');
   }

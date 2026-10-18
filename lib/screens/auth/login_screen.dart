@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
+import '../../l10n/app_strings.dart';
 import '../../widgets/common_widgets.dart';
 import '../home/main_screen.dart';
 import 'register_screen.dart';
@@ -27,7 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _login() async {
     if (_email.text.trim().isEmpty || _password.text.isEmpty) {
-      showErrorSnackBar(context, 'Email dan password wajib diisi');
+      showErrorSnackBar(context, tr('login_required'));
       return;
     }
     setState(() => _loading = true);
@@ -52,15 +53,15 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Welcome Back!',
+            Text(tr('login_title'),
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            const Text('Masuk untuk melanjutkan perjalananmu',
+            Text(tr('login_sub'),
                 style: TextStyle(color: AppColors.textGrey)),
             const SizedBox(height: 28),
             AppTextField(
                 label: 'Email',
-                hint: 'email@contoh.com',
+                hint: tr('reg_email_hint'),
                 icon: Icons.email_outlined,
                 controller: _email),
             const SizedBox(height: 18),
@@ -87,19 +88,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const ForgotPasswordScreen())),
-                child: const Text('Forgot Password'),
+                child: Text(tr('login_forgot')),
               ),
             ),
             const SizedBox(height: 16),
             PrimaryButton(
-                text: _loading ? 'Memproses...' : 'Log In',
+                text: _loading ? tr('common_processing') : tr('login_button'),
                 onPressed: _loading ? null : _login),
             const SizedBox(height: 24),
             Center(
               child: TextButton(
                 onPressed: () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const RegisterScreen())),
-                child: const Text("Don't have an account? Register"),
+                child: Text(tr('login_no_account')),
               ),
             ),
           ],

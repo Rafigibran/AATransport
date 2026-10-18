@@ -1,5 +1,5 @@
-name: aatransport
-description: A&A Transport - Car booking app with Supabase backend and SakuRupiah payments.
+name: haluna_travel
+description: Haluna Travel - Car booking app with Supabase backend and WhatsApp confirmation.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,11 +9,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   cupertino_icons: ^1.0.6
   flutter_svg: ^2.0.10+1
   supabase_flutter: ^2.5.0
   url_launcher: ^6.3.0
-  qr_flutter: ^4.1.0
 
 dependency_overrides:
   # app_links 6.4.1 is incompatible with the Flutter 3.24.3 Android/Gradle template.
