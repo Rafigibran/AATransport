@@ -3,6 +3,7 @@ import '../../models/car.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/validators.dart';
+import '../../l10n/app_strings.dart';
 import '../../widgets/common_widgets.dart';
 import 'review_summary_screen.dart';
 
@@ -46,32 +47,32 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: const Text('Customer Info'), leading: const BackButton()),
+          title: Text(tr('ci_title')), leading: const BackButton()),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             AppTextField(
-                label: 'Customer Name',
-                hint: 'Nama penyewa',
+                label: tr('ci_name'),
+                hint: tr('ci_name_hint'),
                 icon: Icons.person_outline,
                 controller: _name),
             const SizedBox(height: 18),
             AppTextField(
                 label: 'Email',
-                hint: 'email@contoh.com',
+                hint: tr('ci_email_hint'),
                 icon: Icons.email_outlined,
                 controller: _email),
             const SizedBox(height: 18),
             AppTextField(
-                label: 'Phone',
-                hint: '08xxxxxxxxxx',
+                label: tr('ci_phone'),
+                hint: tr('ci_phone_hint'),
                 icon: Icons.phone_outlined,
                 controller: _phone),
             const SizedBox(height: 10),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Book for Others'),
+              title: Text(tr('ci_for_others')),
               value: _bookForOthers,
               activeColor: AppColors.primary,
               onChanged: (v) => setState(() => _bookForOthers = v),
@@ -79,14 +80,14 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen> {
             if (_bookForOthers) ...[
               const SizedBox(height: 8),
               AppTextField(
-                  label: 'Other Customer Name',
-                  hint: 'Nama penyewa lain',
+                  label: tr('ci_other_name'),
+                  hint: tr('ci_other_hint'),
                   icon: Icons.person_outline,
                   controller: _otherName),
             ],
             const SizedBox(height: 28),
             PrimaryButton(
-              text: 'Continue',
+              text: tr('common_continue'),
               onPressed: () {
                 final customerName =
                     _bookForOthers && _otherName.text.trim().isNotEmpty
@@ -95,8 +96,7 @@ class _CustomerInfoScreenState extends State<CustomerInfoScreen> {
                 if (customerName.isEmpty ||
                     !isValidEmail(_email.text) ||
                     !isValidIndonesianPhone(_phone.text)) {
-                  showErrorSnackBar(context,
-                      'Nama wajib diisi serta email dan nomor handphone Indonesia harus valid');
+                  showErrorSnackBar(context, tr('ci_invalid'));
                   return;
                 }
                 Navigator.push(

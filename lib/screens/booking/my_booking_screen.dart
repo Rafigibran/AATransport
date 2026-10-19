@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../l10n/app_strings.dart';
 import '../../models/car.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
@@ -6,7 +8,7 @@ import '../../utils/format.dart';
 import '../../widgets/common_widgets.dart';
 import 'add_review_screen.dart';
 import 'e_receipt_screen.dart';
-import 'payment_screen.dart';
+import 'review_summary_screen.dart' show kWhatsAppNumber;
 
 class MyBookingScreen extends StatefulWidget {
   const MyBookingScreen({super.key});
@@ -37,16 +39,16 @@ class _MyBookingScreenState extends State<MyBookingScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Booking'),
+        title: Text(tr('mb_title')),
         bottom: TabBar(
           controller: _tab,
           labelColor: AppColors.primary,
           unselectedLabelColor: AppColors.textGrey,
           indicatorColor: AppColors.primary,
-          tabs: const [
-            Tab(text: 'Upcoming'),
-            Tab(text: 'Completed'),
-            Tab(text: 'Cancelled')
+          tabs: [
+            Tab(text: tr('mb_upcoming')),
+            Tab(text: tr('mb_completed')),
+            Tab(text: tr('mb_cancelled')),
           ],
         ),
       ),
@@ -57,8 +59,7 @@ class _MyBookingScreenState extends State<MyBookingScreen>
             return const LoadingView();
           }
           if (snapshot.hasError) {
-            return ErrorView(
-                message: 'Gagal memuat booking.', onRetry: _reload);
+            return ErrorView(message: tr('mb_fail'), onRetry: _reload);
           }
           final all = snapshot.data ?? [];
           return TabBarView(
@@ -66,8 +67,7 @@ class _MyBookingScreenState extends State<MyBookingScreen>
             children: ['upcoming', 'completed', 'cancelled'].map((tab) {
               final list = all.where((b) => b.tabStatus == tab).toList();
               if (list.isEmpty) {
-                return const ErrorView(
-                    message: 'Belum ada booking di kategori ini.');
+                return ErrorView(message: tr('mb_empty'));
               }
               return RefreshIndicator(
                 onRefresh: () async => _reload(),
@@ -92,6 +92,25 @@ class _BookingCard extends StatelessWidget {
   final Booking booking;
   final VoidCallback onChanged;
   const _BookingCard({required this.booking, required this.onChanged});
+
+  Future<void> _contactWhatsApp(BuildContext context) async {
+    final message = [
+      tr('wa_greet'),
+      '',
+      '${tr('wa_car')}: ${booking.car.name}',
+      '${tr('wa_pickup')}: ${formatDate(booking.pickupDate)}',
+      '${tr('wa_return')}: ${formatDate(booking.returnDate)}',
+      '${tr('wa_total')}: ${formatMoney(booking.total)}',
+      '${tr('wa_booking_id')}: ${booking.id.substring(0, 8).toUpperCase()}',
+    ].join('\n');
+    final uri = Uri.parse(
+        'https://wa.me/$kWhatsAppNumber?text=${Uri.encodeComponent(message)}');
+    final opened =
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && context.mounted) {
+      showErrorSnackBar(context, tr('rs_wa_fail'));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +144,7 @@ class _BookingCard extends StatelessWidget {
                         style: const TextStyle(
                             color: AppColors.textGrey, fontSize: 12)),
                     const SizedBox(height: 6),
-                    Text(formatRupiah(booking.total),
+                    Text(formatMoney(booking.total),
                         style: const TextStyle(
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold)),
@@ -140,7 +159,7 @@ class _BookingCard extends StatelessWidget {
                 size: 16, color: AppColors.textGrey),
             const SizedBox(width: 6),
             Text(
-                '${formatDateId(booking.pickupDate)}  →  ${formatDateId(booking.returnDate)}',
+                '${formatDate(booking.pickupDate)}  →  ${formatDate(booking.returnDate)}',
                 style:
                     const TextStyle(fontSize: 12, color: AppColors.textGrey)),
           ]),
@@ -155,20 +174,17 @@ class _BookingCard extends StatelessWidget {
                           final confirmed = await showDialog<bool>(
                             context: context,
                             builder: (_) => AlertDialog(
-                              title: const Text('Batalkan booking?'),
-                              content: Text(booking.checkoutUrl != null ||
-                                      booking.paymentNo != null
-                                  ? 'Invoice pembayaran yang belum dibayar akan dibiarkan kedaluwarsa dan tidak dapat dipakai lagi. Lanjutkan pembatalan?'
-                                  : 'Booking ini akan dibatalkan. Lanjutkan?'),
+                              title: Text(tr('mb_cancel_title')),
+                              content: Text(tr('mb_cancel_msg')),
                               actions: [
                                 TextButton(
                                     onPressed: () =>
                                         Navigator.pop(context, false),
-                                    child: const Text('Tidak')),
+                                    child: Text(tr('common_no'))),
                                 ElevatedButton(
                                     onPressed: () =>
                                         Navigator.pop(context, true),
-                                    child: const Text('Ya, batalkan')),
+                                    child: Text(tr('mb_yes_cancel'))),
                               ],
                             ),
                           );
@@ -183,7 +199,9 @@ class _BookingCard extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12))),
-                  child: Text(booking.isPaid ? 'Sudah Dibayar' : 'Cancel'),
+                  child: Text(booking.isPaid
+                      ? tr('mb_paid')
+                      : tr('mb_cancel_btn')),
                 ),
               ),
               const SizedBox(width: 12),
@@ -199,48 +217,14 @@ class _BookingCard extends StatelessWidget {
                       onChanged();
                       return;
                     }
-                    if (booking.checkoutUrl != null ||
-                        booking.paymentNo != null ||
-                        booking.qrString != null) {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => PaymentScreen(
-                            booking: booking,
-                            payment: PaymentResult(
-                                checkoutUrl: booking.checkoutUrl,
-                                paymentNo: booking.paymentNo,
-                                qrString: booking.qrString,
-                                trxId: booking.trxId,
-                                methodCode: booking.paymentMethodCode),
-                          ),
-                        ),
-                      );
-                      onChanged();
-                      return;
-                    }
-                    // The booking exists but its first invoice attempt failed.
-                    // Retry invoice creation instead of opening a receipt for
-                    // an unpaid booking.
-                    try {
-                      final payment = await BookingService.retryPayment(
-                          booking.id, booking.paymentMethodCode);
-                      if (!context.mounted) return;
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => PaymentScreen(
-                              booking: booking, payment: payment),
-                        ),
-                      );
-                      onChanged();
-                    } catch (e) {
-                      if (context.mounted) showErrorSnackBar(context, e);
-                    }
+                    // Unpaid booking: continue confirmation via WhatsApp.
+                    await _contactWhatsApp(context);
                   },
                   style:
                       ElevatedButton.styleFrom(minimumSize: const Size(0, 44)),
-                  child: Text(booking.isPaid ? 'E-Receipt' : 'Bayar / Cek'),
+                  child: Text(booking.isPaid
+                      ? tr('mb_receipt')
+                      : tr('mb_wa')),
                 ),
               ),
             ] else if (isCompleted) ...[
@@ -257,7 +241,7 @@ class _BookingCard extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12))),
-                  child: const Text('Add Review'),
+                  child: Text(tr('mb_review')),
                 ),
               ),
               const SizedBox(width: 12),
@@ -269,7 +253,7 @@ class _BookingCard extends StatelessWidget {
                           builder: (_) => EReceiptScreen(booking: booking))),
                   style:
                       ElevatedButton.styleFrom(minimumSize: const Size(0, 44)),
-                  child: const Text('E-Receipt'),
+                  child: Text(tr('mb_receipt')),
                 ),
               ),
             ] else
@@ -279,7 +263,7 @@ class _BookingCard extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12))),
-                  child: const Text('Refresh'),
+                  child: Text(tr('common_refresh')),
                 ),
               ),
           ]),
@@ -291,12 +275,12 @@ class _BookingCard extends StatelessWidget {
   Widget _statusChip() {
     final paid = booking.isPaid;
     final label = paid
-        ? 'Terkonfirmasi'
+        ? tr('mb_confirmed')
         : booking.status == 'cancelled'
-            ? 'Dibatalkan'
+            ? tr('mb_cancelled_st')
             : booking.status == 'expired'
-                ? 'Kedaluwarsa'
-                : 'Menunggu Pembayaran';
+                ? tr('mb_expired')
+                : tr('mb_pending');
     final color = paid
         ? Colors.green
         : booking.tabStatus == 'cancelled'

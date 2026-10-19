@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
+import '../../l10n/app_strings.dart';
 import '../../widgets/common_widgets.dart';
 import 'otp_screen.dart';
 
@@ -22,7 +23,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Future<void> _send() async {
     if (_email.text.trim().isEmpty) {
-      showErrorSnackBar(context, 'Email wajib diisi');
+      showErrorSnackBar(context, tr('forgot_required'));
       return;
     }
     setState(() => _loading = true);
@@ -49,21 +50,20 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Forgot Your Password?',
+            Text(tr('forgot_title'),
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
-            const Text(
-                'Masukkan email kamu, kami akan mengirimkan kode OTP untuk reset password.',
-                style: TextStyle(color: AppColors.textGrey)),
+            Text(tr('forgot_sub'),
+                style: const TextStyle(color: AppColors.textGrey)),
             const SizedBox(height: 26),
             AppTextField(
                 label: 'Email',
-                hint: 'email@contoh.com',
+                hint: tr('reg_email_hint'),
                 icon: Icons.email_outlined,
                 controller: _email),
             const Spacer(),
             PrimaryButton(
-                text: _loading ? 'Mengirim...' : 'Request OTP',
+                text: _loading ? tr('common_sending') : tr('forgot_button'),
                 onPressed: _loading ? null : _send),
           ],
         ),

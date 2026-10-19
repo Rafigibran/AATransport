@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/car.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
+import '../../l10n/app_strings.dart';
 import '../../widgets/common_widgets.dart';
 
 class AddReviewScreen extends StatefulWidget {
@@ -33,8 +34,8 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
           comment: _comment.text);
       if (!mounted) return;
       showSuccessDialog(context,
-          title: 'Review Submitted',
-          message: 'Terima kasih atas review kamu!',
+          title: tr('ar_done_title'),
+          message: tr('ar_done_msg'),
           onDone: () => Navigator.pop(context));
     } catch (e) {
       if (mounted) showErrorSnackBar(context, e);
@@ -46,14 +47,13 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar:
-          AppBar(title: const Text('Add Review'), leading: const BackButton()),
+      appBar: AppBar(title: Text(tr('ar_title')), leading: const BackButton()),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             CarCard(car: widget.car, horizontal: true),
-            const Text('Bagaimana pengalamanmu di',
+            Text(tr('ar_sub'),
                 style: TextStyle(color: AppColors.textGrey)),
             Text(widget.car.name,
                 style:
@@ -74,12 +74,12 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
             ),
             const SizedBox(height: 18),
             AppTextField(
-                hint: 'Tulis review kamu di sini...',
-                label: 'Your Review',
+                hint: tr('ar_hint'),
+                label: tr('ar_label'),
                 controller: _comment),
             const SizedBox(height: 28),
             PrimaryButton(
-                text: _loading ? 'Mengirim...' : 'Submit',
+                text: _loading ? tr('common_sending') : tr('common_submit'),
                 onPressed: _loading ? null : _submit),
           ],
         ),

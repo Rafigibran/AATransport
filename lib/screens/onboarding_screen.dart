@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_strings.dart';
 import '../theme/app_theme.dart';
 import 'auth/login_screen.dart';
 import 'auth/register_screen.dart';
@@ -13,32 +14,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _controller = PageController();
   int _index = 0;
 
-  final pages = const [
-    _PageData(
-      image:
-          'https://images.unsplash.com/photo-1503376780353-3e669a7b70b9?w=900&q=80',
-      title: 'Temukan Mobil Sewa\nTerbaik Untukmu',
-      desc:
-          'Berbagai pilihan mobil bersih dan terawat untuk perjalanan bisnis, keluarga, dan liburan.',
-    ),
-    _PageData(
-      image:
-          'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=900&q=80',
-      title: 'Booking Mobil Impianmu\nHanya Sekali Ketuk',
-      desc:
-          'Pilih tanggal, tentukan layanan dengan sopir atau lepas kunci, dan bayar dengan aman.',
-    ),
-    _PageData(
-      image:
-          'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=900&q=80',
-      title: 'Jalan Nyaman dan Tenang\nbersama A&A Transport',
-      desc:
-          'Mobil siap jalan, harga transparan dalam Rupiah, dan dukungan pembayaran SakuRupiah.',
-    ),
-  ];
+  List<_PageData> get _pages => [
+        _PageData(
+          image:
+              'https://images.unsplash.com/photo-1503376780353-3e669a7b70b9?w=900&q=80',
+          title: tr('ob1_title'),
+          desc: tr('ob1_desc'),
+        ),
+        _PageData(
+          image:
+              'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=900&q=80',
+          title: tr('ob2_title'),
+          desc: tr('ob2_desc'),
+        ),
+        _PageData(
+          image:
+              'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=900&q=80',
+          title: tr('ob3_title'),
+          desc: tr('ob3_desc'),
+        ),
+      ];
 
   void _next() {
-    if (_index == pages.length - 1) {
+    if (_index == _pages.length - 1) {
       Navigator.push(
           context, MaterialPageRoute(builder: (_) => const RegisterScreen()));
     } else {
@@ -49,6 +47,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final pages = _pages;
     final isLast = _index == pages.length - 1;
     return Scaffold(
       backgroundColor: Colors.white,
@@ -122,14 +121,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           context,
                           MaterialPageRoute(
                               builder: (_) => const RegisterScreen())),
-                      child: const Text('Register'),
+                      child: Text(tr('ob_register')),
                     ),
                     TextButton(
                       onPressed: () => Navigator.push(
                           context,
                           MaterialPageRoute(
                               builder: (_) => const LoginScreen())),
-                      child: const Text('Already have an account? Log In'),
+                      child: Text(tr('ob_login_prompt')),
                     ),
                   ] else
                     Row(
@@ -140,8 +139,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 context,
                                 MaterialPageRoute(
                                     builder: (_) => const LoginScreen())),
-                            child: const Text('Skip',
-                                style: TextStyle(color: AppColors.textGrey))),
+                            child: Text(tr('ob_skip'),
+                                style: const TextStyle(
+                                    color: AppColors.textGrey))),
                         FloatingActionButton(
                             onPressed: _next,
                             backgroundColor: AppColors.primary,

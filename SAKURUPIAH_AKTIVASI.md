@@ -1,3 +1,9 @@
+> **NONAKTIF per 2026-10-18** — Aplikasi sudah beralih ke Haluna Travel dengan
+> pembayaran via WhatsApp (0858-6370-1489). Payment gateway SakuRupiah tidak lagi
+> dipakai; Edge Functions `create-payment`/`check-payment`/`payment-callback`/
+> `payment-return` tidak dipanggil aplikasi. Dokumen di bawah ini disimpan sebagai
+> arsip saja.
+
 # Aktivasi Payment Gateway SakuRupiah — Checklist
 
 Status kode per 2026-10-08: Edge Functions sudah diverifikasi terhadap

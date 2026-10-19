@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
+import '../../l10n/app_strings.dart';
 import '../../widgets/common_widgets.dart';
 import 'reset_password_screen.dart';
 
@@ -25,7 +26,7 @@ class _OtpScreenState extends State<OtpScreen> {
     try {
       await AuthService.sendPasswordReset(widget.email);
       if (mounted) {
-        showErrorSnackBar(context, 'Kode OTP baru sudah dikirim ke email kamu');
+        showErrorSnackBar(context, tr('otp_resent'));
       }
     } catch (e) {
       if (mounted) showErrorSnackBar(context, e);
@@ -34,7 +35,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
   Future<void> _verify() async {
     if (_otp.text.trim().length < 6) {
-      showErrorSnackBar(context, 'Masukkan kode OTP dari email kamu');
+      showErrorSnackBar(context, tr('otp_required'));
       return;
     }
     setState(() => _loading = true);
@@ -59,26 +60,26 @@ class _OtpScreenState extends State<OtpScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Verify Your Account!',
+            Text(tr('otp_title'),
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
-            Text('Masukkan kode OTP yang dikirim ke ${widget.email}.',
+            Text(tr('otp_sub', {'email': widget.email}),
                 style: const TextStyle(color: AppColors.textGrey)),
             const SizedBox(height: 28),
             AppTextField(
-                label: 'Kode OTP',
-                hint: 'Contoh: 123456',
+                label: tr('otp_label'),
+                hint: tr('otp_hint'),
                 icon: Icons.pin_outlined,
                 controller: _otp),
             const SizedBox(height: 16),
             Center(
               child: TextButton(
                   onPressed: _resend,
-                  child: const Text("Tidak menerima OTP? Kirim ulang kode")),
+                  child: Text(tr('otp_resend'))),
             ),
             const Spacer(),
             PrimaryButton(
-                text: _loading ? 'Memverifikasi...' : 'Verify',
+                text: _loading ? tr('common_processing') : tr('otp_button'),
                 onPressed: _loading ? null : _verify),
           ],
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/validators.dart';
+import '../../l10n/app_strings.dart';
 import '../../widgets/common_widgets.dart';
 import '../home/main_screen.dart';
 import 'login_screen.dart';
@@ -36,13 +37,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         (_phone.text.trim().isNotEmpty &&
             !isValidIndonesianPhone(_phone.text)) ||
         _password.text.length < 6) {
-      showErrorSnackBar(context,
-          'Nama wajib diisi, email/nomor handphone harus valid, dan password minimal 6 karakter');
+      showErrorSnackBar(context, tr('reg_validation'));
       return;
     }
     if (!_agree) {
-      showErrorSnackBar(
-          context, 'Kamu perlu menyetujui Syarat & Kebijakan Privasi');
+      showErrorSnackBar(context, tr('reg_must_agree'));
       return;
     }
     setState(() => _loading = true);
@@ -58,9 +57,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       } else {
         showSuccessDialog(
           context,
-          title: 'Registrasi Berhasil',
-          message: 'Silakan cek email kamu untuk konfirmasi akun, lalu login.',
-          buttonText: 'Ke Halaman Login',
+          title: tr('reg_success_title'),
+          message: tr('reg_success_msg'),
+          buttonText: tr('reg_go_login'),
           onDone: () => Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -83,27 +82,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Let's Get Started!",
+            Text(tr('reg_title'),
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            const Text('Buat akun untuk melanjutkan',
+            Text(tr('reg_sub'),
                 style: TextStyle(color: AppColors.textGrey)),
             const SizedBox(height: 28),
             AppTextField(
-                label: 'Full Name',
-                hint: 'Nama lengkap',
+                label: tr('reg_name'),
+                hint: tr('reg_name_hint'),
                 icon: Icons.person_outline,
                 controller: _name),
             const SizedBox(height: 18),
             AppTextField(
                 label: 'Email',
-                hint: 'email@contoh.com',
+                hint: tr('reg_email_hint'),
                 icon: Icons.email_outlined,
                 controller: _email),
             const SizedBox(height: 18),
             AppTextField(
-                label: 'No. Handphone',
-                hint: '08xxxxxxxxxx',
+                label: tr('reg_phone'),
+                hint: tr('reg_phone_hint'),
                 icon: Icons.phone_outlined,
                 controller: _phone),
             const SizedBox(height: 18),
@@ -133,20 +132,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       onTap: () => showDialog(
                             context: context,
                             builder: (_) => AlertDialog(
-                              title: const Text('Syarat dan Kebijakan Privasi'),
-                              content: const SingleChildScrollView(
-                                child: Text(
-                                    'Dengan menggunakan A&A Transport, pengguna menyetujui pemrosesan data akun, data penyewa, dan data booking untuk keperluan reservasi serta pembayaran melalui Supabase dan SakuRupiah. Nomor kartu dan kredensial pembayaran tidak disimpan oleh aplikasi. Booking dianggap terkonfirmasi setelah pembayaran berstatus berhasil. Ketersediaan mobil mengikuti kapasitas armada dan masa sewa yang tercatat di sistem.'),
+                              title: Text(tr('reg_terms_title')),
+                              content: SingleChildScrollView(
+                                child: Text(tr('reg_terms_body')),
                               ),
                               actions: [
                                 TextButton(
                                     onPressed: () => Navigator.pop(context),
-                                    child: const Text('Tutup')),
+                                    child: Text(tr('common_close')),),
                               ],
                             ),
                           ),
-                      child: const Text(
-                          'Saya setuju dengan Syarat dan Kebijakan Privasi',
+                      child: Text(
+                          tr('reg_agree'),
                           style: TextStyle(
                               fontSize: 13,
                               color: AppColors.primary,
@@ -154,14 +152,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ]),
             const SizedBox(height: 14),
             PrimaryButton(
-                text: _loading ? 'Memproses...' : 'Register',
+                text: _loading ? tr('common_processing') : tr('reg_button'),
                 onPressed: _loading ? null : _register),
             const SizedBox(height: 24),
             Center(
               child: TextButton(
                 onPressed: () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const LoginScreen())),
-                child: const Text('Already have an account? Log In'),
+                child: Text(tr('reg_have_account')),
               ),
             ),
           ],

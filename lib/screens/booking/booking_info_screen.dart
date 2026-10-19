@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/app_strings.dart';
 import '../../models/car.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
@@ -29,14 +30,13 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
   late DateTime _returnDate;
   late int _passengers;
   late int _units;
-  String _serviceType = 'Dengan Sopir';
-  PaymentChannel _channel =
-      paymentChannels.firstWhere((c) => c.code == 'QRISC');
+  String _serviceType = '';
   AppSettings _settings = const AppSettings();
 
   @override
   void initState() {
     super.initState();
+    _serviceType = tr('bi_service_driver');
     _pickupDate =
         widget.initialPickupDate ?? DateTime.now().add(const Duration(days: 7));
     _returnDate =
@@ -46,15 +46,14 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
     SettingsService.fetchSettings().then((settings) {
       if (mounted) setState(() => _settings = settings);
     });
-    ProfileService.savedPaymentMethods().then((methods) {
-      if (!mounted || methods.isEmpty) return;
-      final methodCode = methods.first['method_code']?.toString();
-      final saved = paymentChannels
-          .where((channel) => channel.code == methodCode)
-          .toList();
-      if (saved.isNotEmpty) setState(() => _channel = saved.first);
-    });
   }
+
+  List<String> get _serviceTypes => [
+        tr('bi_service_driver'),
+        tr('bi_service_nodriver'),
+        tr('bi_service_airport'),
+        tr('bi_service_daily'),
+      ];
 
   int _estimateTotal(int rawDays) {
     final days = rawDays < 1 ? 1 : rawDays;
@@ -79,99 +78,41 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
     }
   }
 
-  void _pickChannel() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        padding: const EdgeInsets.all(22),
-        decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Metode Pembayaran (SakuRupiah)',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-            const SizedBox(height: 8),
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                children: paymentChannels
-                    .map((c) => RadioListTile<String>(
-                          value: c.code,
-                          groupValue: _channel.code,
-                          onChanged: (v) {
-                            setState(() => _channel =
-                                paymentChannels.firstWhere((e) => e.code == v));
-                            Navigator.pop(context);
-                          },
-                          title: Text(c.name),
-                          subtitle: Text(
-                              '${formatRupiah(c.minAmount)} - ${formatRupiah(c.maxAmount)}'),
-                          secondary: const Icon(Icons.payments_outlined,
-                              color: AppColors.primary),
-                        ))
-                    .toList(),
-              ),
-            ),
-            TextButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const SavedPaymentMethodsScreen()));
-              },
-              icon: const Icon(Icons.bookmark_outline),
-              label: const Text('Kelola metode tersimpan'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final days = _returnDate.difference(_pickupDate).inDays;
+    final billableDays = days < 1 ? 1 : days;
     return Scaffold(
-      appBar: AppBar(
-          title: const Text('Booking Info'), leading: const BackButton()),
+      appBar:
+          AppBar(title: Text(tr('bi_title')), leading: const BackButton()),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             CarCard(car: widget.car, horizontal: true),
-            _dateField('Tanggal Ambil', formatDateId(_pickupDate)),
-            _dateField('Tanggal Kembali', formatDateId(_returnDate)),
+            _dateField(tr('bi_pickup'), formatDate(_pickupDate)),
+            _dateField(tr('bi_return'), formatDate(_returnDate)),
             Row(children: [
               Expanded(
-                  child: _stepper('Penyewa', _passengers,
+                  child: _stepper(tr('bi_passengers'), _passengers,
                       (v) => setState(() => _passengers = v),
                       maxValue: widget.car.seats)),
               const SizedBox(width: 12),
               Expanded(
-                  child: _stepper(
-                      'Mobil', _units, (v) => setState(() => _units = v),
+                  child: _stepper(tr('bi_units'), _units,
+                      (v) => setState(() => _units = v),
                       maxValue: widget.car.totalUnits)),
             ]),
             const SizedBox(height: 18),
             InputDecorator(
-              decoration: const InputDecoration(
-                  labelText: 'Jenis Layanan',
-                  prefixIcon: Icon(Icons.meeting_room_outlined)),
+              decoration: InputDecoration(
+                  labelText: tr('bi_service'),
+                  prefixIcon: const Icon(Icons.meeting_room_outlined)),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _serviceType,
                   isExpanded: true,
-                  items: [
-                    'Dengan Sopir',
-                    'Lepas Kunci',
-                    'Antar/Jemput Bandara',
-                    'Sewa Harian + BBM'
-                  ]
+                  items: _serviceTypes
                       .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                       .toList(),
                   onChanged: (v) =>
@@ -182,11 +123,11 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
             const SizedBox(height: 8),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Metode Pembayaran',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text('${_channel.name} via SakuRupiah'),
-              trailing: const Icon(Icons.keyboard_arrow_right),
-              onTap: _pickChannel,
+              leading: const Icon(Icons.chat_outlined,
+                  color: AppColors.primary),
+              title: Text(tr('bi_payment'),
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text(tr('bi_payment_wa')),
             ),
             const SizedBox(height: 8),
             Container(
@@ -195,27 +136,32 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
               decoration: BoxDecoration(
                   color: Colors.white, borderRadius: BorderRadius.circular(16)),
               child: Text(
-                  'Perkiraan total: ${formatRupiah(_estimateTotal(days))} untuk ${days < 1 ? 1 : days} hari x $_units mobil'
-                  '${_settings.taxPercent > 0 || _settings.feePercent > 0 ? ' (termasuk pajak/fee sesuai pengaturan admin)' : ' (tanpa pajak dan fee)'}',
+                  tr('bi_estimate', {
+                        'total': formatMoney(_estimateTotal(days)),
+                        'days': '$billableDays',
+                        'units': '$_units',
+                      }) +
+                      ((_settings.taxPercent > 0 || _settings.feePercent > 0)
+                          ? tr('bi_estimate_tax')
+                          : tr('bi_estimate_notax')),
                   style: const TextStyle(color: AppColors.textGrey)),
             ),
             const SizedBox(height: 24),
             PrimaryButton(
-              text: 'Continue',
+              text: tr('common_continue'),
               onPressed: () async {
                 if (days < 1) {
-                  showErrorSnackBar(
-                      context, 'Tanggal kembali harus setelah tanggal ambil');
+                  showErrorSnackBar(context, tr('bi_err_dates'));
                   return;
                 }
                 if (_passengers > widget.car.seats) {
                   showErrorSnackBar(context,
-                      'Jumlah penumpang melebihi kapasitas ${widget.car.seats} kursi');
+                      tr('bi_err_seats', {'n': '${widget.car.seats}'}));
                   return;
                 }
                 if (_units > widget.car.totalUnits) {
                   showErrorSnackBar(context,
-                      'Jumlah unit melebihi armada yang tersedia (${widget.car.totalUnits} unit)');
+                      tr('bi_err_units', {'n': '${widget.car.totalUnits}'}));
                   return;
                 }
                 final available = await BookingService.availableUnits(
@@ -226,8 +172,8 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
                 );
                 if (!context.mounted) return;
                 if (_units > available) {
-                  showErrorSnackBar(context,
-                      'Mobil tidak tersedia pada tanggal tersebut. Sisa unit tersedia: $available');
+                  showErrorSnackBar(
+                      context, tr('bi_err_avail', {'n': '$available'}));
                   return;
                 }
                 final draft = BookingDraft(
@@ -237,7 +183,7 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
                   passengers: _passengers,
                   units: _units,
                   serviceType: _serviceType,
-                  paymentMethodCode: _channel.code,
+                  paymentMethodCode: 'WHATSAPP',
                   settings: _settings,
                 );
                 Navigator.push(
@@ -308,122 +254,5 @@ class _BookingInfoScreenState extends State<BookingInfoScreen> {
         ]),
       ),
     ]);
-  }
-}
-
-class SavedPaymentMethodsScreen extends StatefulWidget {
-  const SavedPaymentMethodsScreen({super.key});
-  @override
-  State<SavedPaymentMethodsScreen> createState() =>
-      _SavedPaymentMethodsScreenState();
-}
-
-class _SavedPaymentMethodsScreenState extends State<SavedPaymentMethodsScreen> {
-  late Future<List<Map<String, dynamic>>> _future =
-      ProfileService.savedPaymentMethods();
-
-  void _reload() =>
-      setState(() => _future = ProfileService.savedPaymentMethods());
-
-  Future<void> _add() async {
-    PaymentChannel selected = paymentChannels.first;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Simpan Metode Pembayaran'),
-        content: StatefulBuilder(
-          builder: (context, setLocal) => DropdownButton<String>(
-            value: selected.code,
-            isExpanded: true,
-            items: paymentChannels
-                .map(
-                    (c) => DropdownMenuItem(value: c.code, child: Text(c.name)))
-                .toList(),
-            onChanged: (v) => setLocal(() =>
-                selected = paymentChannels.firstWhere((e) => e.code == v)),
-          ),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Batal')),
-          ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Simpan')),
-        ],
-      ),
-    );
-    if (ok == true) {
-      try {
-        await ProfileService.addSavedPaymentMethod(
-            selected.code, selected.name);
-        _reload();
-      } catch (e) {
-        if (mounted) showErrorSnackBar(context, e);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-          title: const Text('Metode Pembayaran Tersimpan'),
-          leading: const BackButton()),
-      floatingActionButton: FloatingActionButton(
-          onPressed: _add,
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          child: const Icon(Icons.add)),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const LoadingView();
-          }
-          if (snapshot.hasError) {
-            return ErrorView(
-                message: 'Gagal memuat metode pembayaran.', onRetry: _reload);
-          }
-          final items = snapshot.data ?? [];
-          if (items.isEmpty) {
-            return const ErrorView(
-                message:
-                    'Belum ada metode pembayaran tersimpan.\nTekan tombol + untuk menambahkan channel SakuRupiah favoritmu.');
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(20),
-            itemCount: items.length,
-            itemBuilder: (_, i) {
-              final item = items[i];
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16)),
-                child: ListTile(
-                  leading: const Icon(Icons.payments_outlined,
-                      color: AppColors.primary),
-                  title: Text(item['label'].toString()),
-                  subtitle: Text(item['method_code'].toString()),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    onPressed: () async {
-                      try {
-                        await ProfileService.deleteSavedPaymentMethod(
-                            item['id'].toString());
-                        _reload();
-                      } catch (e) {
-                        if (context.mounted) showErrorSnackBar(context, e);
-                      }
-                    },
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
   }
 }

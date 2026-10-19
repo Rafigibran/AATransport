@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_strings.dart';
 import '../theme/app_theme.dart';
 import '../models/car.dart';
 import '../utils/format.dart';
@@ -181,14 +182,14 @@ class CarCard extends StatelessWidget {
           text: TextSpan(
             children: [
               TextSpan(
-                  text: formatRupiah(car.price),
+                  text: formatMoney(car.price),
                   style: const TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 16)),
-              const TextSpan(
-                  text: ' /hari',
-                  style: TextStyle(color: AppColors.textGrey, fontSize: 12)),
+              TextSpan(
+                  text: ' ${tr('home_per_day')}',
+                  style: const TextStyle(color: AppColors.textGrey, fontSize: 12)),
             ],
           ),
         ),
@@ -214,7 +215,7 @@ class SectionHeader extends StatelessWidget {
         if (onSeeAll != null)
           TextButton(
               onPressed: onSeeAll,
-              child: const Text('View All',
+              child: Text(tr('cw_view_all'),
                   style: TextStyle(color: AppColors.primary))),
       ],
     );
@@ -301,7 +302,7 @@ class ErrorView extends StatelessWidget {
               const SizedBox(height: 16),
               SizedBox(
                   width: 180,
-                  child: PrimaryButton(text: 'Coba Lagi', onPressed: onRetry)),
+                  child: PrimaryButton(text: tr('common_retry'), onPressed: onRetry)),
             ],
           ],
         ),
