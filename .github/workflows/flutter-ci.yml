@@ -23,10 +23,14 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Restore platform scaffolding
-        # Binary assets (launcher icons, gradle wrapper) are regenerated here
-        # because this repository was uploaded via the GitHub API (text files only).
-        run: flutter create --project-name aatransport --org com.wizardnative .
+       - name: Restore platform scaffolding
+  # The Gradle wrapper is gitignored, so it is regenerated here.
+  # Project name/org MUST match the Haluna Travel rebrand
+  # (package com.wizardnative.haluna); the git checkout restores any
+  # rebrand file the regeneration may have overwritten.
+  run: |
+    flutter create --project-name haluna --org com.wizardnative .
+    git checkout -- android/app/src/main/AndroidManifest.xml android/app/build.gradle ios/Runner/Info.plist || true
 
       - name: Install dependencies
         run: flutter pub get
