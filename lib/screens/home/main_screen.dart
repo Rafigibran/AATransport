@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/app_strings.dart';
 import '../../theme/app_theme.dart';
 import 'home_screen.dart';
 import '../booking/my_booking_screen.dart';
@@ -37,24 +38,26 @@ class _MainScreenState extends State<MainScreen> {
         }),
         backgroundColor: Colors.white,
         indicatorColor: AppColors.primary.withOpacity(0.14),
-        destinations: const [
+        destinations: [
           NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home, color: AppColors.primary),
-              label: 'Home'),
+              icon: const Icon(Icons.home_outlined),
+              selectedIcon: const Icon(Icons.home, color: AppColors.primary),
+              label: tr('nav_home')),
           NavigationDestination(
-              icon: Icon(Icons.confirmation_number_outlined),
+              icon: const Icon(Icons.confirmation_number_outlined),
+              selectedIcon: const Icon(Icons.confirmation_number,
+                  color: AppColors.primary),
+              label: tr('nav_booking')),
+          NavigationDestination(
+              icon: const Icon(Icons.favorite_border),
               selectedIcon:
-                  Icon(Icons.confirmation_number, color: AppColors.primary),
-              label: 'My Booking'),
+                  const Icon(Icons.favorite, color: AppColors.primary),
+              label: tr('nav_fav')),
           NavigationDestination(
-              icon: Icon(Icons.favorite_border),
-              selectedIcon: Icon(Icons.favorite, color: AppColors.primary),
-              label: 'Favourite'),
-          NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person, color: AppColors.primary),
-              label: 'Profile'),
+              icon: const Icon(Icons.person_outline),
+              selectedIcon:
+                  const Icon(Icons.person, color: AppColors.primary),
+              label: tr('nav_profile')),
         ],
       ),
     );

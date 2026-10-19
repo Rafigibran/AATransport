@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../l10n/app_strings.dart';
 import '../models/car.dart';
 
 SupabaseClient get _db => Supabase.instance.client;
@@ -115,7 +116,7 @@ class CarService {
 
   static Future<bool> toggleFavourite(Car car) async {
     final uid = currentUserId;
-    if (uid == null) throw Exception('Silakan login terlebih dahulu');
+    if (uid == null) throw Exception(tr('common_login_first'));
     if (car.isFavourite) {
       await _db
           .from('favourites')
@@ -171,7 +172,7 @@ class CarService {
       required int rating,
       required String comment}) async {
     final uid = currentUserId;
-    if (uid == null) throw Exception('Silakan login terlebih dahulu');
+    if (uid == null) throw Exception(tr('common_login_first'));
     await _db.from('reviews').insert({
       'user_id': uid,
       'car_id': carId,
@@ -214,7 +215,7 @@ class BookingService {
       required String customerEmail,
       required String customerPhone}) async {
     final uid = currentUserId;
-    if (uid == null) throw Exception('Silakan login terlebih dahulu');
+    if (uid == null) throw Exception(tr('common_login_first'));
     final payload = <String, dynamic>{
       'user_id': uid,
       'car_id': draft.car.id,
@@ -270,7 +271,7 @@ class BookingService {
             .single();
         return Booking.fromMap(full);
       }
-      throw Exception('Respons pembuatan booking tidak valid');
+      throw Exception(tr('svc_booking_invalid'));
     } on PostgrestException catch (rpcError) {
       // Before migration 006 is applied, rpc() returns PGRST202/function not
       // found. Fall through to the original insert so an existing deployment
@@ -325,41 +326,6 @@ class BookingService {
         .from('bookings')
         .update({'status': 'cancelled'}).eq('id', bookingId);
   }
-
-  /// Creates (or safely re-uses) the SakuRupiah invoice for an existing
-  /// booking. Used when the first payment attempt failed after the booking
-  /// row was saved, so the booking never becomes an unpaid orphan.
-  static Future<PaymentResult> retryPayment(
-      String bookingId, String? methodCode) async {
-    return createPayment(bookingId, methodCode ?? 'QRIS');
-  }
-
-  static Future<PaymentResult> createPayment(
-      String bookingId, String methodCode) async {
-    final res = await _db.functions.invoke('create-payment',
-        body: {'booking_id': bookingId, 'method_code': methodCode});
-    final data = res.data;
-    if (data is Map<String, dynamic>) {
-      if (data['error'] != null) throw Exception(data['error'].toString());
-      return PaymentResult.fromMap(data);
-    }
-    if (data is Map) {
-      return PaymentResult.fromMap(Map<String, dynamic>.from(data));
-    }
-    throw Exception('Respons pembayaran tidak valid');
-  }
-
-  /// Returns the SakuRupiah status string: pending | berhasil | expired
-  static Future<String> checkPayment(String bookingId) async {
-    final res = await _db.functions
-        .invoke('check-payment', body: {'booking_id': bookingId});
-    final data = res.data;
-    if (data is Map && data['error'] != null) {
-      throw Exception(data['error'].toString());
-    }
-    if (data is Map && data['status'] != null) return data['status'].toString();
-    throw Exception('Gagal mengecek status pembayaran');
-  }
 }
 
 class ProfileService {
@@ -387,32 +353,10 @@ class ProfileService {
   static Future<void> updateProfile(
       {required String name, String? phone}) async {
     final uid = currentUserId;
-    if (uid == null) throw Exception('Silakan login terlebih dahulu');
+    if (uid == null) throw Exception(tr('common_login_first'));
     await _db.from('profiles').update(
         {'full_name': name.trim(), 'phone': phone?.trim()}).eq('id', uid);
     await _db.auth.updateUser(UserAttributes(data: {'full_name': name.trim()}));
   }
 
-  static Future<List<Map<String, dynamic>>> savedPaymentMethods() async {
-    final uid = currentUserId;
-    if (uid == null) return [];
-    final rows = await _db
-        .from('saved_payment_methods')
-        .select()
-        .eq('user_id', uid)
-        .order('created_at');
-    return rows.cast<Map<String, dynamic>>();
-  }
-
-  static Future<void> addSavedPaymentMethod(String code, String label) async {
-    final uid = currentUserId;
-    if (uid == null) throw Exception('Silakan login terlebih dahulu');
-    await _db
-        .from('saved_payment_methods')
-        .insert({'user_id': uid, 'method_code': code, 'label': label});
-  }
-
-  static Future<void> deleteSavedPaymentMethod(String id) async {
-    await _db.from('saved_payment_methods').delete().eq('id', id);
-  }
 }

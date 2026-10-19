@@ -4,6 +4,7 @@ import '../../models/car.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/format.dart';
+import '../../l10n/app_strings.dart';
 import '../../widgets/common_widgets.dart';
 import '../booking/booking_info_screen.dart';
 
@@ -59,7 +60,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else if (mounted) {
-      showErrorSnackBar(context, 'Tidak dapat membuka aplikasi peta');
+      showErrorSnackBar(context, tr('det_map_fail'));
     }
   }
 
@@ -165,19 +166,19 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                     const Spacer(),
                     const Icon(Icons.star, color: AppColors.star, size: 18),
                     const SizedBox(width: 4),
-                    Text('${_car.rating}  (${_car.reviews} reviews)',
+                    Text('${_car.rating}  ${tr('det_reviews_count', {'n': '${_car.reviews}'})}',
                         style: const TextStyle(fontWeight: FontWeight.w600)),
                   ]),
                   const SizedBox(height: 16),
                   Wrap(spacing: 10, runSpacing: 10, children: [
-                    _specChip(Icons.event_seat_outlined, '${_car.seats} Kursi'),
+                    _specChip(Icons.event_seat_outlined, tr('det_seats', {'n': '${_car.seats}'})),
                     _specChip(Icons.settings_outlined, _car.transmission),
                     _specChip(Icons.local_gas_station_outlined, _car.fuelType),
-                    _specChip(Icons.luggage_outlined, '${_car.baggage} Bagasi'),
+                    _specChip(Icons.luggage_outlined, tr('det_baggage', {'n': '${_car.baggage}'})),
                     _specChip(Icons.directions_car_outlined, _car.carType),
                   ]),
                   const SizedBox(height: 22),
-                  const Text('Features',
+                  Text(tr('det_features'),
                       style:
                           TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
@@ -203,7 +204,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                         .toList(),
                   ),
                   const SizedBox(height: 22),
-                  const Text('Description',
+                  Text(tr('det_desc'),
                       style:
                           TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
@@ -211,7 +212,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                       style: const TextStyle(
                           color: AppColors.textGrey, height: 1.55)),
                   const SizedBox(height: 22),
-                  const SectionHeader(title: 'Photos'),
+                  SectionHeader(title: tr('det_photos')),
                   const SizedBox(height: 12),
                   SizedBox(
                     height: 90,
@@ -233,7 +234,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                     ),
                   ),
                   const SizedBox(height: 22),
-                  const SectionHeader(title: 'Lokasi Penjemputan'),
+                  SectionHeader(title: tr('det_pickup')),
                   const SizedBox(height: 12),
                   InkWell(
                     onTap: _openLocation,
@@ -254,7 +255,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                                 style:
                                     const TextStyle(color: AppColors.textGrey)),
                             const SizedBox(height: 6),
-                            const Text('Ketuk untuk membuka peta',
+                            Text(tr('det_tap_map'),
                                 style: TextStyle(
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w600))
@@ -262,17 +263,16 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                     ),
                   ),
                   const SizedBox(height: 22),
-                  const SectionHeader(title: 'Rating & Reviews'),
+                  SectionHeader(title: tr('det_reviews')),
                   const SizedBox(height: 12),
                   Row(children: [
                     Text(_car.rating.toString(),
                         style: const TextStyle(
                             fontSize: 36, fontWeight: FontWeight.bold)),
                     const SizedBox(width: 14),
-                    const Expanded(
-                      child: Text(
-                          'Distribusi bintang dihitung dari review pelanggan di bawah.',
-                          style: TextStyle(color: AppColors.textGrey)),
+                    Expanded(
+                      child: Text(tr('det_dist'),
+                          style: const TextStyle(color: AppColors.textGrey)),
                     ),
                   ]),
                   const SizedBox(height: 16),
@@ -284,13 +284,13 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                       }
                       if (snapshot.hasError) {
                         return ErrorView(
-                            message: 'Gagal memuat review. Coba lagi nanti.',
+                            message: tr('det_reviews_fail'),
                             onRetry: () =>
                                 setState(() => _reviews = CarService.fetchReviews(widget.car.id)));
                       }
                       final reviews = snapshot.data ?? [];
                       if (reviews.isEmpty) {
-                        return const Text('Belum ada review untuk car ini.',
+                        return Text(tr('det_no_reviews'),
                             style: TextStyle(color: AppColors.textGrey));
                       }
                       final counts = List<int>.filled(5, 0);
@@ -409,13 +409,13 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
           RichText(
             text: TextSpan(children: [
               TextSpan(
-                  text: formatRupiah(_car.price),
+                  text: formatMoney(_car.price),
                   style: const TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 19)),
-              const TextSpan(
-                  text: ' /hari', style: TextStyle(color: AppColors.textGrey)),
+              TextSpan(
+                  text: ' ${tr('home_per_day')}', style: const TextStyle(color: AppColors.textGrey)),
             ]),
           ),
           const SizedBox(width: 18),
@@ -431,7 +431,7 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
                                 initialPassengers: widget.initialPassengers,
                                 initialUnits: widget.initialUnits,
                               ))),
-                  child: const Text('Sewa Sekarang'))),
+                  child: Text(tr('det_rent')))),
         ]),
       ),
     );

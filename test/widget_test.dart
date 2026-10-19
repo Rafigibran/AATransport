@@ -1,11 +1,12 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:aatransport/main.dart';
-import 'package:aatransport/models/car.dart';
+import 'package:haluna_travel/main.dart';
+import 'package:haluna_travel/models/car.dart';
+import 'package:haluna_travel/l10n/app_strings.dart';
+import 'package:haluna_travel/screens/booking/review_summary_screen.dart';
+import 'package:haluna_travel/utils/format.dart';
 
-void main() {
-  test('booking total defaults to zero tax and zero fee', () {
-    const car = Car(
+Car _testCar() => const Car(
       id: 'car-1',
       name: 'Toyota Avanza',
       location: 'Makassar',
@@ -17,14 +18,17 @@ void main() {
       description: '',
       features: [],
     );
+
+void main() {
+  test('booking total defaults to zero tax and zero fee', () {
     final draft = BookingDraft(
-      car: car,
+      car: _testCar(),
       pickupDate: DateTime(2026, 10, 10),
       returnDate: DateTime(2026, 10, 13),
       passengers: 2,
       units: 1,
       serviceType: 'Dengan Sopir',
-      paymentMethodCode: 'QRISC',
+      paymentMethodCode: 'WHATSAPP',
     );
 
     expect(draft.subtotal, 1050000);
@@ -34,26 +38,14 @@ void main() {
   });
 
   test('admin-enabled tax and fee percentages are applied separately', () {
-    const car = Car(
-      id: 'car-1',
-      name: 'Toyota Avanza',
-      location: 'Makassar',
-      image: '',
-      photos: [],
-      price: 350000,
-      rating: 4.6,
-      reviews: 0,
-      description: '',
-      features: [],
-    );
     final draft = BookingDraft(
-      car: car,
+      car: _testCar(),
       pickupDate: DateTime(2026, 10, 10),
       returnDate: DateTime(2026, 10, 12),
       passengers: 2,
       units: 2,
       serviceType: 'Lepas Kunci',
-      paymentMethodCode: 'QRISC',
+      paymentMethodCode: 'WHATSAPP',
       settings: const AppSettings(taxPercent: 5, feePercent: 2.5),
     );
 
@@ -63,28 +55,26 @@ void main() {
     expect(draft.total, 1505000);
   });
 
-  test('payment channels expose supported amount ranges', () {
-    final qris =
-        paymentChannels.firstWhere((channel) => channel.code == 'QRIS');
-    final qrisc =
-        paymentChannels.firstWhere((channel) => channel.code == 'QRISC');
-    expect(qris.supportsAmount(2000000), isTrue);
-    expect(qris.supportsAmount(2500000), isFalse);
-    expect(qrisc.supportsAmount(2500000), isTrue);
-    expect(
-      paymentChannels.map((channel) => channel.code).toSet().length,
-      paymentChannels.length,
-    );
+  test('money formatting follows the system language', () {
+    AppStrings.isEnglish = false;
+    expect(formatMoney(1500000), 'Rp1.500.000');
+    AppStrings.isEnglish = true;
+    // 1.500.000 IDR / 17000 = ~88 USD
+    expect(formatMoney(1500000), '\$88');
+    AppStrings.isEnglish = false;
   });
 
-  testWidgets('A&A Transport app smoke test', (WidgetTester tester) async {
-    await tester.pumpWidget(const AATransportApp());
-    // Splash now shows the "Berbagi" stacked logo as an SVG asset
-    // (tagline is part of the logo artwork, not a text widget).
-    final logo = tester.widget<SvgPicture>(find.byType(SvgPicture));
-    expect((logo.bytesLoader as SvgAssetLoader).assetName,
-        'assets/images/logo-stacked.svg');
-    expect(logo.semanticsLabel, 'A&A Transport');
+  test('whatsapp order message uses the official number', () {
+    expect(kWhatsAppNumber, isNotEmpty);
+  });
+
+  testWidgets('Haluna Travel app smoke test', (WidgetTester tester) async {
+    await tester.pumpWidget(const HalunaTravelApp());
+    // Splash shows the Haluna Travel logo PNG.
+    final logo = tester.widget<Image>(find.byType(Image));
+    expect((logo.image as AssetImage).assetName,
+        'assets/images/logo-haluna.png');
+    expect(logo.semanticLabel, 'Haluna Travel');
     // Flush splash timer so no pending timer remains
     await tester.pump(const Duration(seconds: 3));
   });

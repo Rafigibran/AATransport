@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/car.dart';
 import '../../services/app_services.dart';
+import '../../l10n/app_strings.dart';
 import '../../widgets/common_widgets.dart';
 import 'car_details_screen.dart';
 
@@ -18,7 +19,7 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Favourites')),
+      appBar: AppBar(title: Text(tr('fav_title'))),
       body: FutureBuilder<List<Car>>(
         future: _future,
         builder: (context, snapshot) {
@@ -27,13 +28,11 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
           }
           if (snapshot.hasError) {
             return ErrorView(
-                message: 'Gagal memuat mobil favorit.', onRetry: _reload);
+                message: tr('fav_fail'), onRetry: _reload);
           }
           final cars = snapshot.data ?? [];
           if (cars.isEmpty) {
-            return const ErrorView(
-                message:
-                    'Belum ada car favorit. Tekan ikon hati di detail car.');
+            return ErrorView(message: tr('fav_empty'));
           }
           return RefreshIndicator(
             onRefresh: () async => _reload(),

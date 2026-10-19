@@ -3,6 +3,7 @@ import '../../models/car.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/format.dart';
+import '../../l10n/app_strings.dart';
 import '../../widgets/common_widgets.dart';
 import 'car_details_screen.dart';
 
@@ -101,10 +102,9 @@ class _HomeScreenState extends State<HomeScreen> {
               return const SizedBox(height: 180, child: LoadingView());
             }
             if (snapshot.hasError) {
-              return const SizedBox(
+              return SizedBox(
                   height: 180,
-                  child: ErrorView(
-                      message: 'Notifikasi belum bisa dimuat. Coba lagi nanti.'));
+                  child: ErrorView(message: tr('home_notif_fail')));
             }
             final relevant = (snapshot.data ?? [])
                 .where((b) => b.tabStatus == 'upcoming')
@@ -114,15 +114,15 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Notifikasi',
+                Text(tr('home_notif'),
                     style:
                         TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 if (relevant.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Text('Belum ada pengingat booking atau pembayaran.',
-                        style: TextStyle(color: AppColors.textGrey)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Text(tr('home_notif_empty'),
+                        style: const TextStyle(color: AppColors.textGrey)),
                   )
                 else
                   ...relevant.map((b) => ListTile(
@@ -133,8 +133,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 : Icons.payment_outlined,
                             color: AppColors.primary),
                         title: Text(b.isPaid
-                            ? 'Booking ${b.car.name} terkonfirmasi'
-                            : 'Pembayaran ${b.car.name} masih pending'),
+                            ? tr('home_notif_confirmed', {'car': b.car.name})
+                            : tr('home_notif_pending', {'car': b.car.name})),
                         subtitle: Text(
                             '${formatDateId(b.pickupDate)} - ${formatDateId(b.returnDate)}'),
                       )),
@@ -148,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final name = (_profile?['full_name'] ?? 'Traveler').toString();
+    final name = (_profile?['full_name'] ?? tr('home_traveler')).toString();
     return Scaffold(
       body: SafeArea(
         child: RefreshIndicator(
@@ -167,15 +167,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Halo, $name',
+                          Text(tr('home_greet', {'name': name}),
                               style: const TextStyle(
                                   color: AppColors.textGrey, fontSize: 12),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis),
-                          const Row(children: [
-                            Text('Find Car Nearby',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
-                            Icon(Icons.keyboard_arrow_down, size: 18),
+                          Row(children: [
+                            Text(tr('home_find_nearby'),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
+                            const Icon(Icons.keyboard_arrow_down, size: 18),
                           ]),
                         ],
                       ),
@@ -199,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     children: [
                       AppTextField(
-                          hint: 'Cari car atau kota...',
+                          hint: tr('home_search_hint'),
                           icon: Icons.search,
                           controller: _search,
                           onSubmitted: (_) => _reload()),
@@ -222,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Expanded(
                             child: GestureDetector(
                                 onTap: () => _pickCount(
-                                      title: 'Jumlah penumpang',
+                                      title: tr('home_count_passengers'),
                                       value: _passengers,
                                       min: 1,
                                       max: 14,
@@ -230,12 +231,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                           setState(() => _passengers = v),
                                     ),
                                 child: _infoChip(Icons.person_outline,
-                                    '$_passengers Penumpang'))),
+                                    tr('home_passengers', {'n': '$_passengers'})))),
                         const SizedBox(width: 12),
                         Expanded(
                             child: GestureDetector(
                                 onTap: () => _pickCount(
-                                      title: 'Jumlah mobil',
+                                      title: tr('home_count_cars'),
                                       value: _units,
                                       min: 1,
                                       max: 5,
@@ -244,10 +245,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                 child: _infoChip(
                                     Icons.directions_car_outlined,
-                                    '$_units Mobil'))),
+                                    tr('home_cars', {'n': '$_units'})))),
                       ]),
                       const SizedBox(height: 18),
-                      PrimaryButton(text: 'Find Car', onPressed: _reload),
+                      PrimaryButton(text: tr('home_find_car'), onPressed: _reload),
                     ],
                   ),
                 ),
@@ -260,21 +261,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     }
                     if (snapshot.hasError) {
                       return ErrorView(
-                          message:
-                              'Gagal memuat car. Pastikan tabel Supabase sudah dibuat (lihat BACKEND_SETUP.md).',
+                          message: tr('home_cars_fail'),
                           onRetry: _reload);
                     }
                     final cars = snapshot.data ?? [];
                     if (cars.isEmpty) {
-                      return const ErrorView(
-                          message:
-                              'Belum ada car. Tambahkan data car di Supabase.');
+                      return ErrorView(
+                          message: tr('home_cars_empty'));
                     }
                     final popular = cars.take(3).toList();
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SectionHeader(title: 'Popular Car'),
+                        SectionHeader(title: tr('home_popular')),
                         const SizedBox(height: 14),
                         SizedBox(
                           height: 225,
@@ -300,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        const SectionHeader(title: 'Pilihan Mobil Untukmu'),
+                        SectionHeader(title: tr('home_for_you')),
                         const SizedBox(height: 14),
                         ...cars.map((h) => CarCard(
                               car: h,

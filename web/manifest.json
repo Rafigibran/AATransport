@@ -1,11 +1,11 @@
 {
-    "name": "A&A Transport",
-    "short_name": "A&A Transport",
+    "name": "Haluna Travel",
+    "short_name": "Haluna Travel",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#3E7BFA",
     "theme_color": "#3E7BFA",
-    "description": "A&A Transport - aplikasi booking mobil.",
+    "description": "Haluna Travel - aplikasi booking mobil.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

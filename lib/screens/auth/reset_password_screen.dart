@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/app_services.dart';
 import '../../theme/app_theme.dart';
+import '../../l10n/app_strings.dart';
 import '../../widgets/common_widgets.dart';
 import 'login_screen.dart';
 
@@ -24,11 +25,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   Future<void> _reset() async {
     if (_password.text.length < 6) {
-      showErrorSnackBar(context, 'Password baru minimal 6 karakter');
+      showErrorSnackBar(context, tr('reset_tooshort'));
       return;
     }
     if (_password.text != _confirm.text) {
-      showErrorSnackBar(context, 'Konfirmasi password tidak sama');
+      showErrorSnackBar(context, tr('reset_mismatch'));
       return;
     }
     setState(() => _loading = true);
@@ -38,9 +39,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       if (!mounted) return;
       showSuccessDialog(
         context,
-        title: 'Reset Your Password!',
-        message:
-            'Password kamu berhasil direset. Silakan login dengan password baru.',
+        title: tr('reset_success_title'),
+        message: tr('reset_success_msg'),
         onDone: () => Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -62,28 +62,28 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Reset Your Password!',
+            Text(tr('reset_title'),
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
-            const Text('Buat password baru untuk akun kamu.',
+            Text(tr('reset_sub'),
                 style: TextStyle(color: AppColors.textGrey)),
             const SizedBox(height: 28),
             AppTextField(
-                label: 'New Password',
+                label: tr('reset_new'),
                 hint: '••••••••••',
                 icon: Icons.lock_outline,
                 obscure: true,
                 controller: _password),
             const SizedBox(height: 18),
             AppTextField(
-                label: 'Confirm Password',
+                label: tr('reset_confirm'),
                 hint: '••••••',
                 icon: Icons.lock_outline,
                 obscure: true,
                 controller: _confirm),
             const Spacer(),
             PrimaryButton(
-                text: _loading ? 'Memproses...' : 'Reset Password',
+                text: _loading ? tr('common_processing') : tr('reset_button'),
                 onPressed: _loading ? null : _reset),
           ],
         ),
