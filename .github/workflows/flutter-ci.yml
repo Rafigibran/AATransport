@@ -23,7 +23,7 @@ jobs:
           channel: 'stable'
           cache: true
 
-       - name: Restore platform scaffolding
+ - name: Restore platform scaffolding
   # The Gradle wrapper is gitignored, so it is regenerated here.
   # Project name/org MUST match the Haluna Travel rebrand
   # (package com.wizardnative.haluna); the git checkout restores any
